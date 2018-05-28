@@ -1,0 +1,38 @@
+{
+  "name": "functions",
+  "scripts": {
+    "lint": "tslint --project tsconfig.json",
+    "build": "tsc && node ./lib/index.js"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "@types/express": "^4.11.1",
+    "@types/fs-extra": "^5.0.2",
+    "@types/hapi": "^17.0.12",
+    "@types/jsonfile": "^4.0.1",
+    "@types/lodash": "^4.14.108",
+    "@types/request": "^2.47.0",
+    "@types/rx": "^4.1.1",
+    "@types/uuid": "^3.4.3",
+    "async-array": "^0.2.0",
+    "async-lodash": "^1.0.9",
+    "cheerio-httpcli": "^0.7.3",
+    "ecl": "0.0.4",
+    "express": "^4.16.3",
+    "fs-extra": "^6.0.1",
+    "hapi": "^17.5.0",
+    "jsonfile": "^4.0.0",
+    "lodash": "^4.17.10",
+    "moment": "^2.22.1",
+    "promise-jsonfile": "^1.0.3",
+    "request": "^2.85.0",
+    "rx": "^4.1.0",
+    "uuid": "^3.2.1",
+    "uuid-node": "^1.0.0"
+  },
+  "devDependencies": {
+    "tslint": "^5.8.0",
+    "typescript": "^2.5.3"
+  },
+  "private": true
+}
