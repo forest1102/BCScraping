@@ -32,17 +32,15 @@
 	$ npm -v
 	```
 	
-* ライブラリのインストール
 
-```
-$ cd BCScraping
-$ npm install
-```
 ## 使い方
 
 * ローカルサーバを立てる
 
 ```
+$ git clone https://github.com/forest1102/BCScraping.git
+$ cd BCScraping
+$ npm install
 $ npm run build
 ```
 
