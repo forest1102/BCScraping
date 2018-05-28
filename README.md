@@ -35,6 +35,7 @@
 * ライブラリのインストール
 
 ```
+$ cd BCScraping
 $ npm install
 ```
 ## 使い方
