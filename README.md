@@ -37,6 +37,7 @@
 ```
 $ npm install
 ```
+## 使い方
 
 * ローカルサーバを立てる
 
@@ -46,7 +47,7 @@ $ npm run build
 
 * リクエストの例
 
-(http://localhost:8080/execScraping?q=検索したい用語)
+(http://localhost:8080/execScraping?q=検索したい用語)  
 (http://localhost:8080/execScraping?q=検索したい用語&min=10&max=1000)
 
 
