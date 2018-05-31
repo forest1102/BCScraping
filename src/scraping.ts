@@ -4,6 +4,9 @@ import { BCDetailURL, BCItemListURL } from './serialize'
 import * as Rx from 'rx'
 
 client.set('browser', 'chrome')
+client.set('headers', {
+	family: '4'
+})
 
 type detailObject = {
 	'商品名': string
@@ -16,7 +19,10 @@ type detailObject = {
 
 export const itemListScrapingObservable = (queries: SearchObject) =>
 	Rx.Observable.create<{ ids: string[], i: number }>(async (observer) => {
-		if (!queries.q) return observer.onError('query is not defined')
+		if (!queries.q) {
+			observer.onError('query is not defined')
+			return
+		}
 
 		try {
 
@@ -26,12 +32,14 @@ export const itemListScrapingObservable = (queries: SearchObject) =>
 				type: 1,
 				p: 1
 			}
-			let url = new BCItemListURL(searchObject)
+			const url = new BCItemListURL(searchObject)
 			let { $ } = await url.scraping()
+			if ($('#searchNotFound').length) {
+				throw new Error('Sorry, Not Found with the query')
+			}
 			const lastIndex = Math.ceil((parseInt($('#bcs_resultTxt')
 				.find('em')
 				.text()) || 1) / searchObject.rowPerPage)
-			const ids: string[] = []
 
 			for (let i = 1; i <= lastIndex; i++) {
 
@@ -56,28 +64,25 @@ export const itemListScrapingObservable = (queries: SearchObject) =>
 			observer.onCompleted()
 		}
 
-		return observer.onCompleted()
 	})
 
 export const detailScrapingObservable = (array: string[]) =>
-	Rx.Observable.create<detailObject>(async (observer) => {
-		let i = 0
-		let id: string
-		try {
-			for (const len = array.length; i < len; i++) {
-				id = array[i]
-				const result = (await scrapingDetail(id))
-				observer.onNext(result)
-			}
-			observer.onCompleted()
-		}
-		catch (e) {
-			observer.onError(`at:${id}, error:${e}`)
-		}
-		finally {
-			observer.onCompleted()
-		}
-	})
+	Rx.Observable.fromArray(array)
+		.flatMap(id => scrapingDetail(id))
+		.retry(10)
+// Rx.Observable.create<detailObject>(async (observer) => {
+// 	try {
+// 		for (let i = 0, len = array.length; i < len; i++) {
+// 			const id = array[i]
+// 			const result = (await scrapingDetail(id))
+// 			observer.onNext(result)
+// 		}
+// 		observer.onCompleted()
+// 	}
+// 	catch (e) {
+// 		observer.onError(e)
+// 	}
+// })
 
 async function scrapingDetail(id: string | number): Promise<detailObject> {
 
@@ -98,48 +103,54 @@ async function scrapingDetail(id: string | number): Promise<detailObject> {
 		'商品名',
 		'型番'
 	]
-	const url = new BCDetailURL(id),
-		{ $ } = (await url.scraping())
+	const url = new BCDetailURL(id)
+	try {
 
-	return {
-		...$('#bcs_detail')
-			.find('tr')
-			.toArray()
-			.map((e) => ({
-				key: $('th', e).text().trim(),
-				val: $('td', e).text().trim()
-			}))
-			.filter(e => dataKeys.indexOf(e.key) !== -1)
-			.reduce((acc, cur) => {
-				const {
-					key,
-					val
-				} = cur
-				switch (key) {
-					case 'メーカー':
-						return {
-							[key]: val
-								.replace(/（メーカーサイトへ）/, '')
-								.trim()
-						}
-					default:
-						return {
-							[key]: val,
-							...acc
-						}
-				}
-			}, {}),
+		const { $ } = (await url.scraping())
 
-		'価格（税込）': $('.tax_cell li')
-			.last()
-			.text()
-			.replace(/円（税込）/, '')
-		,
-		'ポイント': $('.bcs_point')
-			.first()
-			.text()
-			.replace('ポイント', '')
-			.replace(/（.*?）/, '')
-			.trim()
-	} as detailObject
+		return {
+			...$('#bcs_detail')
+				.find('tr')
+				.toArray()
+				.map((e) => ({
+					key: $('th', e).text().trim(),
+					val: $('td', e).text().trim()
+				}))
+				.filter(e => dataKeys.indexOf(e.key) !== -1)
+				.reduce((acc, cur) => {
+					const {
+						key,
+						val
+					} = cur
+					switch (key) {
+						case 'メーカー':
+							return {
+								[key]: val
+									.replace(/（メーカーサイトへ）/, '')
+									.trim()
+							}
+						default:
+							return {
+								[key]: val,
+								...acc
+							}
+					}
+				}, {}),
+
+			'価格（税込）': $('.tax_cell li')
+				.last()
+				.text()
+				.replace(/円（税込）/, '')
+			,
+			'ポイント': $('.bcs_point')
+				.first()
+				.text()
+				.replace('ポイント', '')
+				.replace(/（.*?）/, '')
+				.trim()
+		} as detailObject
+	}
+	catch (e) {
+		throw new Error(`url:${url.toURL} error:${e}`)
+	}
 }

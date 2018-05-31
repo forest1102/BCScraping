@@ -1,4 +1,3 @@
-import * as _ from 'lodash'
 import route from './route'
 import * as Hapi from 'hapi'
 
@@ -15,14 +14,17 @@ async function start() {
 		await server.start()
 	}
 	catch (err) {
-		console.log(err)
-		process.exit(1)
+		return Promise.reject(err)
 	}
-
-	console.log('Server running at:', server.info.uri)
+	return Promise.resolve(server.info.uri)
 }
 
 start()
+	.then((uri) => console.log('Server running at:', uri))
+	.catch((e) => {
+		console.error('server error' + e)
+		process.exit(1)
+	})
 // app
 // 	.get('/setSheetID', (req, res) => {
 // 		const {

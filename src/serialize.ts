@@ -2,18 +2,18 @@ import * as encode from './encoding'
 import * as client from 'cheerio-httpcli'
 
 client.set('timeout', 100000)
-
+process.env.UV_THREADPOOL_SIZE = '128'
 export abstract class ScrapingURL {
 
 	abstract get toURL(): string
 
-	static serialize(obj: {}) {
-		const str = [];
-		for (const p in obj)
-			if (obj.hasOwnProperty(p)) {
-				// Logger.log(encode.EscapeSJIS(String(obj[p])))
-				str.push(encode.EscapeSJIS(String(p)) + "=" + encode.EscapeSJIS(String(obj[p])))
-			}
+	serialize(obj: {}) {
+		const str = Object.keys(obj)
+		for (let i = 0, len = str.length; i < len; i++) {
+			const key = str[i]
+
+			str[i] = encode.EscapeSJIS(key) + '=' + encode.EscapeSJIS(String(obj[key]))
+		}
 		return str.join("&")
 	}
 
@@ -28,13 +28,7 @@ export class BCItemListURL extends ScrapingURL {
 	}
 
 	serialize() {
-		const str = [];
-		for (const p in this.searchObject)
-			if (this.searchObject.hasOwnProperty(p)) {
-				// Logger.log(encode.EscapeSJIS(String(obj[p])))
-				str.push(encode.EscapeSJIS(String(p)) + "=" + encode.EscapeSJIS(String(this.searchObject[p])))
-			}
-		return str.join("&")
+		return super.serialize(this.searchObject)
 	}
 
 	get toURL() {
