@@ -1,4 +1,4 @@
-import { scrapingItemListObservable, scrapingDetailObservable } from './scraping'
+import { scrapingItemListObservable, scrapingDetailObservable, scrapingStockObservable } from './scraping'
 import * as Rx from 'rx'
 import * as fs from 'fs-extra'
 import * as path from 'path'
@@ -14,9 +14,18 @@ execScrapingSubject
 			.retry()
 			.filter(_val => !!_val)
 			.flatMap(_val => Rx.Observable.fromArray(_val))
+			.filter(id => !!id)
 			.flatMap(_val =>
-				scrapingDetailObservable(_val)
-					.retry()
+				Rx.Observable.zip(
+					scrapingDetailObservable(_val)
+						.retry(),
+					scrapingStockObservable(_val)
+						.retry(),
+					(detail, stock) => ({
+						...detail,
+						...stock
+					})
+				)
 			)
 			.do(
 				value => {

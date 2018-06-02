@@ -18,6 +18,12 @@ export abstract class ScrapingURL {
 		return str.join("&")
 	}
 
+	static BadRequestError = class extends Error { }
+	static NotFoundError = class extends Error {
+		message = `Not Found the result`
+		name = 'NOT FOUND THE RESULT'
+	}
+
 	scraping() {
 		return client.fetch(this.toURL, 'sjis')
 	}
@@ -57,3 +63,13 @@ export class BCDetailURL extends ScrapingURL {
 	}
 }
 
+export class BCStockURL extends ScrapingURL {
+
+	constructor(private id: string | number) {
+		super()
+	}
+
+	get toURL() {
+		return `https://www.biccamera.com/bc/tenpo/CSfBcToriokiList.jsp?GOODS_NO=${this.id}`
+	}
+}

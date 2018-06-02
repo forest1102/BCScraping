@@ -1,6 +1,6 @@
 import * as client from 'cheerio-httpcli'
 import * as moment from 'moment'
-import { BCDetailURL, BCItemListURL } from './serialize'
+import { BCDetailURL, BCItemListURL, BCStockURL } from './serialize'
 import * as Rx from 'rx'
 
 client.set('browser', 'chrome')
@@ -17,133 +17,145 @@ type detailObject = {
 	'JANコード': string
 }
 
+enum StockType {
+	'△ お取り寄せ',
+	'○ 在庫残少',
+	'◎ 在庫あり',
+	'在庫無し'
+}
+
 export const scrapingItemListObservable = (queries: SearchObject) =>
-	Rx.Observable.create<string[]>(async (observer) => {
-		if (!queries.q) {
-			observer.onError('query is not defined')
-			return
-		}
+	Rx.Observable.if(
+		() => !queries || !queries.q,
 
-		try {
+		Rx.Observable.throw(new BCDetailURL.BadRequestError()),
+		Rx.Observable.of({
+			...queries,
+			rowPerPage: 100,
+			type: 1,
+			p: 1
+		})
+	)
+		.flatMap((searchObject: SearchObject) =>
+			Rx.Observable.create<string[]>(async (observer) => {
+				try {
+					const url = new BCItemListURL(searchObject)
+					let { $ } = await url.scraping()
+					if ($('#searchNotFound').length) {
+						throw new BCDetailURL.NotFoundError()
+					}
+					const lastIndex = Math.ceil((parseInt($('#bcs_resultTxt')
+						.find('em')
+						.text()) || 1) / searchObject.rowPerPage)
 
-			const searchObject: SearchObject = {
-				...queries,
-				rowPerPage: 100,
-				type: 1,
-				p: 1
-			}
-			const url = new BCItemListURL(searchObject)
-			let { $ } = await url.scraping()
-			if ($('#searchNotFound').length) {
-				throw new Error('Sorry, Not Found with the query')
-			}
-			const lastIndex = Math.ceil((parseInt($('#bcs_resultTxt')
-				.find('em')
-				.text()) || 1) / searchObject.rowPerPage)
+					for (let i = 1; i <= lastIndex; i++) {
 
-			for (let i = 1; i <= lastIndex; i++) {
+						if (i > 1) {
 
-				if (i > 1) {
+							url.searchObject.p = i
+							$ = (await url.scraping()
+								.catch(err =>
+									observer.onError(`${err}\nurl:${url.toURL}`))).$
+						}
 
-					url.searchObject.p = i
-					$ = (await url.scraping()
-						.catch(err =>
-							observer.onError(`${err}\nurl:${url.toURL}`))).$
+						observer.onNext(
+							$('.bcs_boxItem .prod_box')
+								.toArray()
+								.map(el => el.attribs['data-item-id']))
+					}
+				}
+				catch (e) {
+					observer.onError(`${e}`)
+				}
+				finally {
+					observer.onCompleted()
 				}
 
-				observer.onNext(
-					$('.bcs_boxItem .prod_box')
-						.toArray()
-						.map(el => el.attribs['data-item-id']))
-			}
-		}
-		catch (e) {
-			observer.onError(`${e}`)
-		}
-		finally {
-			observer.onCompleted()
-		}
-
-	})
+			}))
 
 export const scrapingDetailObservable = (id: string) =>
-	Rx.Observable
-		.create<detailObject>(async (observer) => {
-
+	Rx.Observable.of(new BCDetailURL(id))
+		.flatMap(url => url.scrapingObservable())
+		.map<detailObject>($ => {
 			if (!id) {
-				observer.onNext({
+				return {
 					'商品名': '',
 					'価格（税込）': '',
 					'ポイント': '',
 					'型番': '',
 					'メーカー': '',
 					'JANコード': ''
-				})
-				return
+				}
 			}
-
 			const dataKeys = [
 				'商品コード',
 				'JANコード',
 				'商品名',
 				'型番'
 			]
-			const url = new BCDetailURL(id)
-			try {
 
-				const { $ } = (await url.scraping())
+			return ({
+				...$('#bcs_detail')
+					.find('tr')
+					.toArray()
+					.map((e) => ({
+						key: $('th', e).text().trim(),
+						val: $('td', e).text().trim()
+					}))
+					.filter(e => dataKeys.indexOf(e.key) !== -1)
+					.reduce((acc, cur) => {
+						const {
+							key,
+							val
+						} = cur
+						switch (key) {
+							case 'メーカー':
+								return {
+									[key]: val
+										.replace(/（メーカーサイトへ）/, '')
+										.trim()
+								}
+							default:
+								return {
+									[key]: val,
+									...acc
+								}
+						}
+					}, {}),
 
-				observer.onNext({
-					...$('#bcs_detail')
-						.find('tr')
-						.toArray()
-						.map((e) => ({
-							key: $('th', e).text().trim(),
-							val: $('td', e).text().trim()
-						}))
-						.filter(e => dataKeys.indexOf(e.key) !== -1)
-						.reduce((acc, cur) => {
-							const {
-								key,
-								val
-							} = cur
-							switch (key) {
-								case 'メーカー':
-									return {
-										[key]: val
-											.replace(/（メーカーサイトへ）/, '')
-											.trim()
-									}
-								default:
-									return {
-										[key]: val,
-										...acc
-									}
-							}
-						}, {}),
-
-					'価格（税込）': $('.tax_cell li')
-						.last()
-						.text()
-						.replace(/円（税込）/, '')
-					,
-					'ポイント': $('.bcs_point')
-						.first()
-						.text()
-						.replace('ポイント', '')
-						.replace(/（.*?）/, '')
-						.trim()
-				} as detailObject)
-				return
-			}
-			catch (e) {
-				observer.onError(`${e}\nurl:${id}`)
-			}
-			finally {
-				observer.onCompleted()
-			}
+				'価格（税込）': $('.tax_cell li')
+					.last()
+					.text()
+					.replace(/円（税込）/, '')
+				,
+				'ポイント': $('.bcs_point')
+					.first()
+					.text()
+					.replace('ポイント', '')
+					.replace(/（.*?）/, '')
+					.trim()
+			} as detailObject)
 		})
 
-
 export const scrapingStockObservable = (id: string) =>
-	Rx.Observable.of()
+	Rx.Observable.of(new BCStockURL(id))
+		.flatMap(url => url.scrapingObservable())
+		.flatMap($ => {
+			const shopLength = $(' [name=realshop_name_list_jp]').length
+
+			if (!shopLength) {
+				return Rx.Observable.throw(new BCStockURL.NotFoundError())
+			}
+
+			return Rx.Observable.range(0, shopLength)
+				.map(i => $(`#shopList_jp_${i}`))
+				.reduce((acc, cur) => {
+					const key = $('.pc_dtb', cur).first().text()
+					const value = $('.bcs_KST_Stock', cur).first().text()
+					return {
+						[key]:
+							+(value === '◎ 在庫あり' || value === '○ 在庫残少'),
+						...acc
+					}
+				}, {})
+		})
