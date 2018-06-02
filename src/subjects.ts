@@ -1,4 +1,4 @@
-import { itemListScrapingObservable, detailScrapingObservable } from './scraping'
+import { scrapingItemListObservable, scrapingDetailObservable } from './scraping'
 import * as Rx from 'rx'
 import * as fs from 'fs-extra'
 import * as path from 'path'
@@ -10,18 +10,21 @@ execScrapingSubject
 
 	.filter(val => !!val)
 	.subscribe(val =>
-		itemListScrapingObservable(val)
+		scrapingItemListObservable(val)
+			.retry()
+			.filter(_val => !!_val)
+			.flatMap(_val => Rx.Observable.fromArray(_val))
 			.flatMap(_val =>
-				detailScrapingObservable(_val.ids)
-					.map(a => ({ value: a, i: _val.i })))
+				scrapingDetailObservable(_val)
+					.retry()
+			)
 			.do(
 				value => {
-					console.log(`${value.i}: ${JSON.stringify(value.value)}\n`)
+					console.log(`${JSON.stringify(value)}\n`)
 				},
-				error => console.log(`onError:${error}`),
+				error => console.error(`onError:${error}`),
 				() => console.log('onCompleted')
 			)
-			.map(_val => _val.value)
 			.map(_val => JSON.stringify(_val, null, 2))
 			.toArray()
 			.map(arr => `[${arr.join(',\n')}]`)

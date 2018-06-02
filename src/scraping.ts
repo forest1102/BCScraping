@@ -17,8 +17,8 @@ type detailObject = {
 	'JANコード': string
 }
 
-export const itemListScrapingObservable = (queries: SearchObject) =>
-	Rx.Observable.create<{ ids: string[], i: number }>(async (observer) => {
+export const scrapingItemListObservable = (queries: SearchObject) =>
+	Rx.Observable.create<string[]>(async (observer) => {
 		if (!queries.q) {
 			observer.onError('query is not defined')
 			return
@@ -46,19 +46,19 @@ export const itemListScrapingObservable = (queries: SearchObject) =>
 				if (i > 1) {
 
 					url.searchObject.p = i
-					$ = (await url.scraping()).$
+					$ = (await url.scraping()
+						.catch(err =>
+							observer.onError(`${err}\nurl:${url.toURL}`))).$
 				}
 
-				observer.onNext({
-					ids: $('.bcs_boxItem .prod_box')
+				observer.onNext(
+					$('.bcs_boxItem .prod_box')
 						.toArray()
-						.map(el => el.attribs['data-item-id']),
-					i
-				})
+						.map(el => el.attribs['data-item-id']))
 			}
 		}
 		catch (e) {
-			observer.onError(e)
+			observer.onError(`${e}`)
 		}
 		finally {
 			observer.onCompleted()
@@ -66,91 +66,84 @@ export const itemListScrapingObservable = (queries: SearchObject) =>
 
 	})
 
-export const detailScrapingObservable = (array: string[]) =>
-	Rx.Observable.fromArray(array)
-		.flatMap(id => scrapingDetail(id))
-		.retry(10)
-// Rx.Observable.create<detailObject>(async (observer) => {
-// 	try {
-// 		for (let i = 0, len = array.length; i < len; i++) {
-// 			const id = array[i]
-// 			const result = (await scrapingDetail(id))
-// 			observer.onNext(result)
-// 		}
-// 		observer.onCompleted()
-// 	}
-// 	catch (e) {
-// 		observer.onError(e)
-// 	}
-// })
+export const scrapingDetailObservable = (id: string) =>
+	Rx.Observable
+		.create<detailObject>(async (observer) => {
 
-async function scrapingDetail(id: string | number): Promise<detailObject> {
+			if (!id) {
+				observer.onNext({
+					'商品名': '',
+					'価格（税込）': '',
+					'ポイント': '',
+					'型番': '',
+					'メーカー': '',
+					'JANコード': ''
+				})
+				return
+			}
 
-	if (!id) {
-		return {
-			'商品名': '',
-			'価格（税込）': '',
-			'ポイント': '',
-			'型番': '',
-			'メーカー': '',
-			'JANコード': ''
-		}
-	}
+			const dataKeys = [
+				'商品コード',
+				'JANコード',
+				'商品名',
+				'型番'
+			]
+			const url = new BCDetailURL(id)
+			try {
 
-	const dataKeys = [
-		'商品コード',
-		'JANコード',
-		'商品名',
-		'型番'
-	]
-	const url = new BCDetailURL(id)
-	try {
+				const { $ } = (await url.scraping())
 
-		const { $ } = (await url.scraping())
-
-		return {
-			...$('#bcs_detail')
-				.find('tr')
-				.toArray()
-				.map((e) => ({
-					key: $('th', e).text().trim(),
-					val: $('td', e).text().trim()
-				}))
-				.filter(e => dataKeys.indexOf(e.key) !== -1)
-				.reduce((acc, cur) => {
-					const {
-						key,
-						val
-					} = cur
-					switch (key) {
-						case 'メーカー':
-							return {
-								[key]: val
-									.replace(/（メーカーサイトへ）/, '')
-									.trim()
+				observer.onNext({
+					...$('#bcs_detail')
+						.find('tr')
+						.toArray()
+						.map((e) => ({
+							key: $('th', e).text().trim(),
+							val: $('td', e).text().trim()
+						}))
+						.filter(e => dataKeys.indexOf(e.key) !== -1)
+						.reduce((acc, cur) => {
+							const {
+								key,
+								val
+							} = cur
+							switch (key) {
+								case 'メーカー':
+									return {
+										[key]: val
+											.replace(/（メーカーサイトへ）/, '')
+											.trim()
+									}
+								default:
+									return {
+										[key]: val,
+										...acc
+									}
 							}
-						default:
-							return {
-								[key]: val,
-								...acc
-							}
-					}
-				}, {}),
+						}, {}),
 
-			'価格（税込）': $('.tax_cell li')
-				.last()
-				.text()
-				.replace(/円（税込）/, '')
-			,
-			'ポイント': $('.bcs_point')
-				.first()
-				.text()
-				.replace('ポイント', '')
-				.replace(/（.*?）/, '')
-				.trim()
-		} as detailObject
-	}
-	catch (e) {
-		throw new Error(`url:${url.toURL} error:${e}`)
-	}
-}
+					'価格（税込）': $('.tax_cell li')
+						.last()
+						.text()
+						.replace(/円（税込）/, '')
+					,
+					'ポイント': $('.bcs_point')
+						.first()
+						.text()
+						.replace('ポイント', '')
+						.replace(/（.*?）/, '')
+						.trim()
+				} as detailObject)
+				return
+			}
+			catch (e) {
+				observer.onError(`${e}\nurl:${id}`)
+			}
+			finally {
+				observer.onCompleted()
+			}
+		})
+
+
+export const scrapingStockObservable = (id: string) =>
+	Rx.Observable.of()

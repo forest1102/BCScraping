@@ -1,5 +1,6 @@
 import * as encode from './encoding'
 import * as client from 'cheerio-httpcli'
+import { Observable } from 'rx'
 
 client.set('timeout', 100000)
 process.env.UV_THREADPOOL_SIZE = '128'
@@ -19,6 +20,15 @@ export abstract class ScrapingURL {
 
 	scraping() {
 		return client.fetch(this.toURL, 'sjis')
+	}
+
+	scrapingObservable() {
+		return Observable.fromPromise(client.fetch(this.toURL, 'sjis'))
+			.catch(err => {
+				err.message += '\nurl:' + this.toURL
+				return Observable.throw(err)
+			})
+			.map((result) => result.$)
 	}
 }
 
