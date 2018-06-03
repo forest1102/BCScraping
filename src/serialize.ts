@@ -18,11 +18,6 @@ export abstract class ScrapingURL {
 		return str.join("&")
 	}
 
-	static BadRequestError = class extends Error { }
-	static NotFoundError = class extends Error {
-		message = `Not Found the result`
-		name = 'NOT FOUND THE RESULT'
-	}
 
 	scraping() {
 		return client.fetch(this.toURL, 'sjis')

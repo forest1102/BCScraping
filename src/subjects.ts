@@ -1,4 +1,5 @@
 import { scrapingItemListObservable, scrapingDetailObservable, scrapingStockObservable } from './scraping'
+import { NotFoundError, BadRequestError } from './Error'
 import * as Rx from 'rx'
 import * as fs from 'fs-extra'
 import * as path from 'path'
@@ -12,7 +13,7 @@ execScrapingSubject
 	.subscribe(val =>
 		scrapingItemListObservable(val)
 			.retry()
-			.filter(_val => !!_val)
+			.filter(_val => !!_val.length)
 			.flatMap(_val => Rx.Observable.fromArray(_val))
 			.filter(id => !!id)
 			.flatMap(_val =>
@@ -31,7 +32,7 @@ execScrapingSubject
 				value => {
 					console.log(`${JSON.stringify(value)}\n`)
 				},
-				error => console.error(`onError:${error}`),
+				null,
 				() => console.log('onCompleted')
 			)
 			.map(_val => JSON.stringify(_val, null, 2))
@@ -41,7 +42,11 @@ execScrapingSubject
 			.flatMap((_val) =>
 				fs.outputFile(jsonDir, _val)
 			)
-			.subscribeOnNext(() => console.log('saved JSON'))
+			.subscribe(
+				() => console.log('saved JSON'),
+				(err) => console.error(err),
+				() => console.log('All Complete')
+			)
 	)
 	// .flatMap(val => Rx.Observable.fromPromise(
 	// 	fs.readJSON(jsonDir)

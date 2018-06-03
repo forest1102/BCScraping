@@ -1,6 +1,7 @@
 import * as client from 'cheerio-httpcli'
 import * as moment from 'moment'
 import { BCDetailURL, BCItemListURL, BCStockURL } from './serialize'
+import { NotFoundError, BadRequestError } from './Error'
 import * as Rx from 'rx'
 
 client.set('browser', 'chrome')
@@ -26,9 +27,7 @@ enum StockType {
 
 export const scrapingItemListObservable = (queries: SearchObject) =>
 	Rx.Observable.if(
-		() => !queries || !queries.q,
-
-		Rx.Observable.throw(new BCDetailURL.BadRequestError()),
+		() => (!!queries && !!queries.q),
 		Rx.Observable.of({
 			...queries,
 			rowPerPage: 100,
@@ -42,7 +41,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 					const url = new BCItemListURL(searchObject)
 					let { $ } = await url.scraping()
 					if ($('#searchNotFound').length) {
-						throw new BCDetailURL.NotFoundError()
+						Rx.Observable.empty()
 					}
 					const lastIndex = Math.ceil((parseInt($('#bcs_resultTxt')
 						.find('em')
@@ -53,9 +52,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 						if (i > 1) {
 
 							url.searchObject.p = i
-							$ = (await url.scraping()
-								.catch(err =>
-									observer.onError(`${err}\nurl:${url.toURL}`))).$
+							$ = (await url.scraping()).$
 						}
 
 						observer.onNext(
@@ -65,7 +62,8 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 					}
 				}
 				catch (e) {
-					observer.onError(`${e}`)
+					if (e['statusCode'] === 404) return observer.onNext([])
+					else return observer.onError(e)
 				}
 				finally {
 					observer.onCompleted()
@@ -76,7 +74,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 export const scrapingDetailObservable = (id: string) =>
 	Rx.Observable.of(new BCDetailURL(id))
 		.flatMap(url => url.scrapingObservable())
-		.map<detailObject>($ => {
+		.map<{}>($ => {
 			if (!id) {
 				return {
 					'商品名': '',
@@ -136,16 +134,16 @@ export const scrapingDetailObservable = (id: string) =>
 					.trim()
 			} as detailObject)
 		})
+		.catch((err) => {
+			if (err['statusCode'] === 404) return Rx.Observable.return({})
+			else return Rx.Observable.throw(err)
+		})
 
 export const scrapingStockObservable = (id: string) =>
 	Rx.Observable.of(new BCStockURL(id))
 		.flatMap(url => url.scrapingObservable())
 		.flatMap($ => {
 			const shopLength = $(' [name=realshop_name_list_jp]').length
-
-			if (!shopLength) {
-				return Rx.Observable.throw(new BCStockURL.NotFoundError())
-			}
 
 			return Rx.Observable.range(0, shopLength)
 				.map(i => $(`#shopList_jp_${i}`))
@@ -158,4 +156,8 @@ export const scrapingStockObservable = (id: string) =>
 						...acc
 					}
 				}, {})
+		})
+		.catch((err) => {
+			if (err['statusCode'] === 404) return Rx.Observable.return({})
+			else return Rx.Observable.throw(err)
 		})

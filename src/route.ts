@@ -1,4 +1,5 @@
 import { execScrapingSubject } from './subjects'
+import { scrapingStockObservable } from './scraping'
 import * as Hapi from 'hapi'
 export default [
 	{
@@ -18,4 +19,22 @@ export default [
 			return queries
 		}
 	},
+	{
+		method: 'GET',
+		path: '/scrapingStock',
+		handler: (request, h) => {
+			const { id } = request.query as { id: string }
+			if (!id) return 'id'
+			scrapingStockObservable(id)
+				.subscribe(
+					(stock) => console.log(JSON.stringify(stock)),
+					(err: {
+						statusCode: number,
+						url: string
+					}) => console.error(JSON.stringify(err.statusCode)),
+					() => console.log('Complete')
+				)
+			return id
+		}
+	}
 ] as Hapi.ServerRoute[]
