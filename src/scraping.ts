@@ -1,7 +1,6 @@
 import * as client from 'cheerio-httpcli'
 import * as moment from 'moment'
 import { BCDetailURL, BCItemListURL, BCStockURL } from './serialize'
-import { NotFoundError, BadRequestError } from './Error'
 import * as Rx from 'rx'
 
 client.set('browser', 'chrome')
