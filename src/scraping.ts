@@ -96,7 +96,7 @@ const shopLists = [
 	"Air BIC CAMERA 中部国際空港セントレア店(国際線出発ゲート内)※"
 ]
 const shopLength = shopLists.length
-const defaultStock = shopLists.map(() => 0)
+const defaultStock = new Array(shopLength).fill('0')
 
 export const scrapingItemListObservable = (queries: SearchObject) =>
 	Rx.Observable.if(
@@ -220,7 +220,7 @@ export const scrapingStockObservable = (id: string) =>
 		.flatMap($ => Rx.Observable.range(0, shopLength)
 			.map(i => $(`#shopList_jp_${i}`))
 			.map(cur => $('.bcs_KST_Stock', cur).first().text())
-			.map(value => +(value === '◎ 在庫あり' || value === '○ 在庫残少'))
+			.map(value => +(value === '◎ 在庫あり' || value === '○ 在庫残少') + '')
 			.toArray()
 			// .reduce((acc, cur) => {
 			// 	const key = $('.pc_dtb', cur).first().text()
@@ -258,7 +258,6 @@ export const execScraping = (queries: SearchObject) =>
 			)
 		)
 		.startWith([...dataTitle, ...shopLists])
-		.map(arr => arr.join(',') + '\n')
 			// .map(_val => JSON.stringify(_val, null, 2))
 			// .toArray()
 			// .map(arr => `[${arr.join(',\n')}]`)

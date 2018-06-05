@@ -18,6 +18,7 @@ export default [
 			const queries = request.query as SearchObject
 			const csv = fs.createWriteStream('./db/data.csv')
 			execScraping(queries)
+				.map(arr => arr.join(',') + '\n')
 				.subscribe(
 					val => {
 						console.log(val)
