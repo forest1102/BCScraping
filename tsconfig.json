@@ -6,7 +6,7 @@
     "outDir": "lib",
     "sourceMap": true,
     "target": "es6"
-  },
+	},
   "compileOnSave": true,
   "include": [
     "src"
