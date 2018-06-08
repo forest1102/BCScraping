@@ -1,3 +1,4 @@
+
 declare type SearchObject = {
 	q?: string
 	min?: number
@@ -7,6 +8,7 @@ declare type SearchObject = {
 	p?: number
 	[key: string]: number | string
 }
+
 
 declare interface ErrorConstructor {
 	extend(subTypeName: string, errorCode?: number): any

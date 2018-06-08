@@ -3,6 +3,11 @@ import { BCDetailURL, BCItemListURL, BCStockURL } from './serialize'
 import * as Hapi from 'hapi'
 import * as Rx from 'rx'
 import * as fs from 'fs-extra'
+import GoogleAPI from './googleapi'
+import * as moment from 'moment'
+
+
+
 export default [
 	{
 		method: 'GET',
@@ -16,6 +21,7 @@ export default [
 		path: '/execScraping',
 		handler: (request, h) => {
 			const queries = request.query as SearchObject
+
 			const csv = fs.createWriteStream('./db/data.csv')
 			execScraping(queries)
 				.map(arr => arr.join(',') + '\n')
@@ -27,6 +33,84 @@ export default [
 					err => console.error(err),
 					() => console.log('Completed!')
 				)
+			return queries
+		}
+	},
+	{
+		method: 'GET',
+		path: '/execScraping/{spreadsheetId}',
+		handler: (request, h) => {
+			const queries = request.query as SearchObject
+			const { spreadsheetId } = request.params
+			const sheets = GoogleAPI.instance.sheets
+			const dayStr = moment().format('YYYYMMDD')
+
+			sheets.spreadsheetId = spreadsheetId
+
+			let cur = 1
+			if (!(spreadsheetId && sheets)) {
+				return {
+					statusCode: '400',
+					error: 'not authorized google account!'
+				}
+			}
+
+			sheets.getObservable({
+				spreadsheetId: sheets.spreadsheetId,
+				includeGridData: false,
+			})
+				.map(res => (res['sheets'] as { properties: { sheetId: number, title: string } }[])
+					.find(e => {
+						return (e.properties && e.properties.title === dayStr)
+					})
+				)
+				.flatMap(sheet =>
+					Rx.Observable.if(
+						() => !sheet,
+						sheets.batchUpdateObservable({
+							spreadsheetId: sheets.spreadsheetId,
+							resource: {
+								"requests": [
+									{
+										"addSheet": {
+											"properties": {
+												"title": dayStr
+											}
+										}
+									}
+								]
+							}
+						})
+							.map(res => res['replies'][0]['addSheet']['properties']['sheetId'] as number),
+						Rx.Observable.return(sheet.properties.sheetId)
+					)
+				)
+				.doOnNext(id => sheets.sheetId = id)
+				.flatMap(id =>
+					execScraping(queries)
+					// .toArray()
+				)
+				.bufferWithCount(5)
+				.subscribe(buf => {
+					console.log(buf)
+					sheets.setData(buf, {
+						range: {
+							startRow: cur,
+							startCol: 1,
+							endRow: cur + buf.length - 1,
+							endCol: buf[0].length
+						}
+					}, (err, data) => {
+						if (err) {
+							console.log(err)
+							return
+						}
+						console.log('Saved to Spreadsheet')
+					})
+					cur += buf.length
+				})
+
+
 			return queries
 		}
 	},

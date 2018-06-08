@@ -8,6 +8,7 @@ const server: Hapi.Server = new Hapi.Server({
 
 server.route(route)
 
+
 async function start() {
 
 	try {
