@@ -240,17 +240,17 @@ export const scrapingStockObservable = (id: string) =>
 		})
 export const execScraping = (queries: SearchObject) =>
 	scrapingItemListObservable(queries)
-		.retry()
+		.retry(10)
 		.filter(_val => !!_val.length)
 		.flatMap(_val => Rx.Observable.fromArray(_val))
 		.filter(id => !!id)
 		.concatMap(_val =>
 			Rx.Observable.zip(
 				scrapingDetailObservable(_val)
-					.retry()
+					.retry(10)
 				,
 				scrapingStockObservable(_val)
-					.retry()
+					.retry(10)
 				,
 				(detail, stock) => ([
 					...detail,

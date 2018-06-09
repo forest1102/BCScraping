@@ -67,7 +67,8 @@ export default [
 				)
 				.flatMap(sheet =>
 					Rx.Observable.if(
-						() => !sheet,
+						() => !!sheet,
+						Rx.Observable.just((sheet || { properties: { sheetId: 0 } }).properties.sheetId),
 						sheets.batchUpdateObservable({
 							spreadsheetId: sheets.spreadsheetId,
 							resource: {
@@ -75,15 +76,22 @@ export default [
 									{
 										"addSheet": {
 											"properties": {
-												"title": dayStr
+												"title": dayStr,
+												"gridProperties": {
+													"rowCount": 20000,
+												}
 											}
 										}
 									}
 								]
 							}
 						})
-							.map(res => res['replies'][0]['addSheet']['properties']['sheetId'] as number),
-						Rx.Observable.return(sheet.properties.sheetId)
+							.do(
+								res => console.log(res),
+								err => console.error(err),
+								null
+							)
+							.map(res => res['replies'][0]['addSheet']['properties']['sheetId'] as number)
 					)
 				)
 				.doOnNext(id => sheets.sheetId = id)
@@ -109,7 +117,10 @@ export default [
 						console.log('Saved to Spreadsheet')
 					})
 					cur += buf.length
-				})
+				},
+					err => console.error(err),
+					() => console.log('Completed')
+				)
 
 
 			return queries
