@@ -7,6 +7,7 @@ client.set('browser', 'chrome')
 client.set('headers', {
 	family: '4'
 })
+client.set('timeout', 36000000)
 
 type detailObject = {
 	'商品名': string
@@ -212,7 +213,7 @@ export const scrapingDetailObservable = (id: string) =>
 			})
 			else return Rx.Observable.throw(err)
 		})
-		.map(obj => dataTitle.map(key => obj[key]))
+		.map(obj => dataTitle.map(key => `"${obj[key]}"`))
 
 export const scrapingStockObservable = (id: string) =>
 	Rx.Observable.of(new BCStockURL(id))
@@ -239,10 +240,11 @@ export const scrapingStockObservable = (id: string) =>
 		})
 export const execScraping = (queries: SearchObject) =>
 	scrapingItemListObservable(queries)
+		.retry()
 		.filter(_val => !!_val.length)
 		.flatMap(_val => Rx.Observable.fromArray(_val))
 		.filter(id => !!id)
-		.flatMap(_val =>
+		.concatMap(_val =>
 			Rx.Observable.zip(
 				scrapingDetailObservable(_val)
 					.retry()

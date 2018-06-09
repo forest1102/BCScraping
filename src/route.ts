@@ -54,6 +54,7 @@ export default [
 					error: 'not authorized google account!'
 				}
 			}
+			console.log(JSON.stringify(queries))
 
 			sheets.getObservable({
 				spreadsheetId: sheets.spreadsheetId,
@@ -90,9 +91,9 @@ export default [
 					execScraping(queries)
 					// .toArray()
 				)
-				.bufferWithCount(5)
+				.bufferWithCount(100)
 				.subscribe(buf => {
-					console.log(buf)
+					console.log(JSON.stringify(buf))
 					sheets.setData(buf, {
 						range: {
 							startRow: cur,

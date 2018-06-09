@@ -10,10 +10,10 @@ const cred = require('../config/scrapingBigCamera-eb546c29942b.json')
 
 class GoogleSheetWithObservable extends googlesheets.GoogleSheet {
 	setDataObservable(data: string[][], options?: utils.ISheetDataOptions) {
-		return Observable.create<string[][]>(obs => {
-			this.setData(data, (err) => {
+		return Observable.create(obs => {
+			this.setData(data, (err, res) => {
 				if (err) return obs.onError(err)
-				obs.onNext(data)
+				obs.onNext(res)
 				obs.onCompleted()
 			})
 		})
