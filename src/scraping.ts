@@ -111,40 +111,31 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 		})
 	)
 		.flatMap((searchObject: SearchObject) =>
-			Rx.Observable.create<string[]>(async (observer) => {
-				try {
-					const url = new BCItemListURL(searchObject)
-					let { $ } = await url.scraping()
-					if ($('#searchNotFound').length) {
-						Rx.Observable.empty()
-					}
-					const lastIndex = Math.ceil((parseInt($('#bcs_resultTxt')
-						.find('em')
-						.text()) || 1) / searchObject.rowPerPage)
-
-					for (let i = 1; i <= lastIndex; i++) {
-
-						if (i > 1) {
-
-							url.searchObject.p = i
-							$ = (await url.scraping()).$
-						}
-
-						observer.onNext(
-							$('.bcs_boxItem .prod_box')
-								.toArray()
-								.map(el => el.attribs['data-item-id']))
-					}
-				}
-				catch (e) {
-					if (e['statusCode'] === 404) return observer.onNext([])
-					else return observer.onError(e)
-				}
-				finally {
-					observer.onCompleted()
-				}
-
-			}))
+			Rx.Observable.just(new BCItemListURL(searchObject))
+		)
+		.flatMap(startPage =>
+			startPage.scrapingObservable()
+				.flatMap($ =>
+					Rx.Observable.range(
+						2,
+						Math.ceil(
+							(parseInt($('#bcs_resultTxt')
+								.find('em')
+								.text()
+							) || 3 - 2) / startPage.searchObject.rowPerPage
+						)
+					)
+						.map(p => new BCItemListURL({ ...startPage.searchObject, p }))
+						.flatMap(url => url.scrapingObservable())
+						.startWith($)
+				)
+		)
+		.map($ => $('.bcs_boxItem .prod_box')
+			.toArray()
+			.map(el => el.attribs['data-item-id']))
+		.catch(e =>
+			(e['statusCode'] == 404) ? Rx.Observable.return([]) : Rx.Observable.throw(e))
+		.retryWhen(errs => withDelay(errs, 10, 1))
 
 export const scrapingDetailObservable = (id: string) =>
 	Rx.Observable.of(new BCDetailURL(id))

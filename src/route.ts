@@ -6,7 +6,8 @@ import * as fs from 'fs-extra'
 import GoogleAPI from './googleapi'
 import * as moment from 'moment'
 
-
+const BUFFER_SIZE = 10
+const MAX_SHEET_SIZE = 10000
 
 export default [
 	{
@@ -78,7 +79,7 @@ export default [
 											"properties": {
 												"title": dayStr,
 												"gridProperties": {
-													"rowCount": 15000,
+													"rowCount": MAX_SHEET_SIZE,
 												}
 											}
 										}
@@ -99,7 +100,8 @@ export default [
 					execScraping(queries)
 					// .toArray()
 				)
-				.bufferWithCount(10)
+				.take(MAX_SHEET_SIZE)
+				.bufferWithCount(BUFFER_SIZE)
 				.subscribe(buf => {
 					console.log(JSON.stringify(buf))
 					sheets.setData(buf, {
