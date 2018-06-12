@@ -2,6 +2,7 @@ import * as client from 'cheerio-httpcli'
 import * as moment from 'moment'
 import { BCDetailURL, BCItemListURL, BCStockURL } from './serialize'
 import * as Rx from 'rx'
+import { withDelay } from './customObs'
 
 client.set('browser', 'chrome')
 client.set('headers', {
@@ -240,17 +241,17 @@ export const scrapingStockObservable = (id: string) =>
 		})
 export const execScraping = (queries: SearchObject) =>
 	scrapingItemListObservable(queries)
-		.retry(10)
+		.retryWhen(errs => withDelay(errs, 10, 1))
 		.filter(_val => !!_val.length)
 		.flatMap(_val => Rx.Observable.fromArray(_val))
 		.filter(id => !!id)
 		.concatMap(_val =>
 			Rx.Observable.zip(
 				scrapingDetailObservable(_val)
-					.retry(10)
+					.retryWhen(errs => withDelay(errs, 10, 1))
 				,
 				scrapingStockObservable(_val)
-					.retry(10)
+					.retryWhen(errs => withDelay(errs, 10, 1))
 				,
 				(detail, stock) => ([
 					...detail,

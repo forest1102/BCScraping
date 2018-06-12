@@ -78,7 +78,7 @@ export default [
 											"properties": {
 												"title": dayStr,
 												"gridProperties": {
-													"rowCount": 20000,
+													"rowCount": 15000,
 												}
 											}
 										}
@@ -99,7 +99,7 @@ export default [
 					execScraping(queries)
 					// .toArray()
 				)
-				.bufferWithCount(100)
+				.bufferWithCount(10)
 				.subscribe(buf => {
 					console.log(JSON.stringify(buf))
 					sheets.setData(buf, {
