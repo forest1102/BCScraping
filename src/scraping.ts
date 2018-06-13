@@ -115,6 +115,9 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 		)
 		.flatMap(startPage =>
 			startPage.scrapingObservable()
+				.catch(e =>
+					(e['statusCode'] == 404) ? Rx.Observable.empty() : Rx.Observable.throw(e))
+				.retryWhen(errs => withDelay(errs))
 				.flatMap($ =>
 					Rx.Observable.range(
 						2,
@@ -126,16 +129,16 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 						)
 					)
 						.map(p => new BCItemListURL({ ...startPage.searchObject, p }))
-						.flatMap(url => url.scrapingObservable())
+						.flatMap(url =>
+							url.scrapingObservable()
+								.retryWhen(errs => withDelay(errs))
+						)
 						.startWith($)
 				)
 		)
 		.map($ => $('.bcs_boxItem .prod_box')
 			.toArray()
 			.map(el => el.attribs['data-item-id']))
-		.catch(e =>
-			(e['statusCode'] == 404) ? Rx.Observable.return([]) : Rx.Observable.throw(e))
-		.retryWhen(errs => withDelay(errs, 10, 1))
 
 export const scrapingDetailObservable = (id: string) =>
 	Rx.Observable.of(new BCDetailURL(id))
@@ -232,17 +235,16 @@ export const scrapingStockObservable = (id: string) =>
 		})
 export const execScraping = (queries: SearchObject) =>
 	scrapingItemListObservable(queries)
-		.retryWhen(errs => withDelay(errs, 10, 1))
 		.filter(_val => !!_val.length)
 		.flatMap(_val => Rx.Observable.fromArray(_val))
 		.filter(id => !!id)
 		.concatMap(_val =>
 			Rx.Observable.zip(
 				scrapingDetailObservable(_val)
-					.retryWhen(errs => withDelay(errs, 10, 1))
+					.retryWhen(withDelay)
 				,
 				scrapingStockObservable(_val)
-					.retryWhen(errs => withDelay(errs, 10, 1))
+					.retryWhen(withDelay)
 				,
 				(detail, stock) => ([
 					...detail,
