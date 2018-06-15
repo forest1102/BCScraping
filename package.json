@@ -2,7 +2,8 @@
   "name": "functions",
   "scripts": {
     "lint": "tslint --project tsconfig.json",
-    "build": "tsc && node ./lib/index.js"
+    "build": "tsc && node ./lib/index.js",
+		"start": "tsc && node ./lib/index.js"
   },
   "main": "lib/index.js",
   "dependencies": {
