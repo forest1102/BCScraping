@@ -63,5 +63,5 @@ typings/
 # database
 
 db
-config
+#config
 lib
