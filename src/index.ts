@@ -3,7 +3,7 @@ import * as Hapi from 'hapi'
 
 const server: Hapi.Server = new Hapi.Server({
 	host: 'localhost',
-	port: 8080
+	port: process.env.PORT || 5000
 })
 
 server.route(route)
