@@ -2,8 +2,8 @@ import route from './route'
 import * as Hapi from 'hapi'
 
 const server: Hapi.Server = new Hapi.Server({
-	host: 'localhost',
-	port: ~~process.env.PORT || 8080
+	host: '0.0.0.0',
+	port: ~~process.env.PORT || 5000
 })
 
 server.route(route)
