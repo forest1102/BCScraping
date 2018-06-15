@@ -9,19 +9,8 @@ const server: Hapi.Server = new Hapi.Server({
 server.route(route)
 
 
-async function start() {
-
-	try {
-		await server.start()
-	}
-	catch (err) {
-		return Promise.reject(err)
-	}
-	return Promise.resolve(server.info.uri)
-}
-
-start()
-	.then((uri) => console.log('Server running at:', uri))
+server.start()
+	.then(() => console.log('Server running at:', server.info.uri))
 	.catch((e) => {
 		console.error('server error' + e)
 		process.exit(1)

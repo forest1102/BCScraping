@@ -98,7 +98,7 @@ const shopLists = [
 	"Air BIC CAMERA 中部国際空港セントレア店(国際線出発ゲート内)※"
 ]
 const shopLength = shopLists.length
-const defaultStock = new Array(shopLength).fill('0')
+const defaultStock = new Array(shopLength + 1).join('0').split('')
 
 export const scrapingItemListObservable = (queries: SearchObject) =>
 	Rx.Observable.if(
