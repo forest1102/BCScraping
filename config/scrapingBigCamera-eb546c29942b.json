@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "scrapingbigcamera",
+  "private_key_id": "eb546c29942b851f66b1c38582f0ccbda860fe47",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEugIBADANBgkqhkiG9w0BAQEFAASCBKQwggSgAgEAAoIBAQCTqmECW29jIlAw\n0B3baaRTSb9NJckw6SgXt+irQvkVsNW5TvsfmHoMm3E1mv7ufaX/mOx8ED02Ra+r\nraYfPoMWTyahAKgTlDfNg//e5NwE8q6wwjwbfJoWWFnF8wDBpnyVjhUg6++22tzJ\ncUodh4li7VnmFRomIBtDCk9le+YGIss0mjx+Ax0X8kVrY0+viiUxrmHcRMbtEMcs\ns7CElMJ2cX9+mf/guBYDjoJm2py13JewA8CagDaO9GWtdqIDMS+/Hv8zcgS4WiWG\n6Sb3SZKQBGtKbtXgNTq2x4ZbvzVebBYIpPBmU+V/8iZ8wfBhrcJy4o5IOaRqhu8C\nuwdFZ6ANAgMBAAECgf8jdx7sG2uwjQHqPuSwpIzl3YFy1Q2fHtkNjfxA6ZTw/tbO\ngYfHVmqQZ+MfagAybSDAZJwNXTN0jfVMnPsQnJTX0iNECAY4FwMEvtEqLD5CTFJk\nzthdHATH9zuYgE/mqzex0dtX1GHY36FcON0ufjWbY4vdUSygAw6JJc7kX/Bi6mZK\nE1QZAqTBIzSAZb0atA3WR3a7d/peGgdKiNNly0YiUJqhR/3LWQO/JA82xtvgzroR\nV30u0DwBYia5FCXBiZVZub7vyaDwoFqXDW9/VvZBCaoNiWhQ6PeT5FGSsfByMUly\n1ofF4RGyClnPDnmlqqZkzo5vxTWJUae/1GPUr0ECgYEAwnduQQ+zMQHSzSWhxFqG\nRFHoystSXMxTkD4gMgjtjo6KFRyHB3JHpfiCZ6i44VKCAt0U7E94rADO9F0QnsI7\nxgOTUML//GZy5sQlDS9zCfo0C+BLAQTLDZ/7cPAH4DhG+3mAHdJhS7qxDv2P/Shg\nW255/a5Tkc7mMHA5S2FJjk0CgYEAwmPhdxEOsCSBPOnKlermr6lMc1JgTYrDR8mj\nO6iGdyEHTfUS5MS1MprHWvbmV5zULKQc8ZSnY2NYptBziGGPCFrNeCB2iU0bOuuw\nlZ+gss9+TE0ThptFe/E9DgkkFgvRmLdnCbZOfWqrIcx8JBgTppEcDUqX42ihHBdg\nRhdcuMECgYAn0iT1la1v35u2/nm9p3vPCabNwAzBi+Wgp9gX5tQeWPnVkN3lnHUn\ne1fYuigBm8+bnoHmUe+36QJ374azu7pZtem4o/WfTatBrfCYXpsD9AQsWmWBc+XQ\niG4Ill5Gf7+pRxwA/0+FHlmbZDjT8iypDFpWpBfgx6lDSfexg954EQKBgGzNjwMf\n7wK0TAoWKagj5J7pubrKntCIHKlvuQfJWgoP2JDP3ZVibLE4ZOELVP4w76lU6kZl\nmBNPJe2ouyHYyUA54sucD/zlxZoDFcGJqV6sONroQUeUXR30duIGR8Z3Mwexj+Cl\nw+T68XJnjAx/1W/jxLnDyKQmiha5Fs/kf6eBAoGAQj5GqEqcN0m5JXHLwUSMejH/\nTgcSe9iNpNIUlv+xAF2GcPinXS41Wv/L2oTcoxY6uZfoiqFLCOZw0MFTFohsFaAQ\n6YX+Bpqk9OXyNXOlI5oB5z9/p+SqPEyDxst0XOoak0oF3/SiToHRwDnZMgWva+71\nVRXzAMO2IvdljQLg+7A=\n-----END PRIVATE KEY-----\n",
+  "client_email": "scrapingbigcamera@appspot.gserviceaccount.com",
+  "client_id": "110340660948944561750",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/scrapingbigcamera%40appspot.gserviceaccount.com"
+}

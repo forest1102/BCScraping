@@ -4,10 +4,7 @@ import { BCDetailURL, BCItemListURL, BCStockURL } from './serialize'
 import * as Rx from 'rx'
 import { withDelay } from './customObs'
 
-client.set('browser', 'chrome')
-client.set('headers', {
-	family: '4'
-})
+client.set('headers', null)
 client.set('timeout', 36000000)
 
 type detailObject = {
