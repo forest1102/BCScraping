@@ -3,25 +3,14 @@ import * as Hapi from 'hapi'
 
 const server: Hapi.Server = new Hapi.Server({
 	host: 'localhost',
-	port: 8080
+	port: ~~process.env.PORT || 8080
 })
 
 server.route(route)
 
 
-async function start() {
-
-	try {
-		await server.start()
-	}
-	catch (err) {
-		return Promise.reject(err)
-	}
-	return Promise.resolve(server.info.uri)
-}
-
-start()
-	.then((uri) => console.log('Server running at:', uri))
+server.start()
+	.then(() => console.log('Server running at:', server.info.uri))
 	.catch((e) => {
 		console.error('server error' + e)
 		process.exit(1)
