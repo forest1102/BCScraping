@@ -63,10 +63,12 @@ export default [
 				spreadsheetId: sheets.spreadsheetId,
 				includeGridData: false,
 			})
-				.flatMap(res => (res['sheets'] as { properties: { sheetId: number, title: string } }[]))
-				.find(e => {
-					return (e.properties && e.properties.title === dayStr)
-				})
+				.map(res =>
+					(res['sheets'] as { properties: { sheetId: number, title: string } }[])
+						.find(e => {
+							return (e.properties && e.properties.title === dayStr)
+						})
+				)
 				.flatMap(sheet =>
 					Rx.Observable.if(
 						() => !!sheet,
