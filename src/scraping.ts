@@ -1,14 +1,8 @@
-import * as client from 'cheerio-httpcli'
 import * as moment from 'moment'
 import { BCDetailURL, BCItemListURL, BCStockURL } from './serialize'
 import * as Rx from 'rx'
 import { withDelay } from './customObs'
 
-client.set('browser', 'chrome')
-client.set('headers', {
-	family: '4'
-})
-client.set('timeout', 36000000)
 
 type detailObject = {
 	'商品名': string
@@ -110,35 +104,36 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 			p: 1
 		})
 	)
-		.flatMap((searchObject: SearchObject) =>
-			Rx.Observable.just(new BCItemListURL(searchObject))
-		)
-		.flatMap(startPage =>
+		.map((searchObject: SearchObject) =>
+			new BCItemListURL(searchObject))
+		.concatMap(startPage =>
 			startPage.scrapingObservable()
-				.catch(e =>
-					(e['statusCode'] == 404) ? Rx.Observable.empty() : Rx.Observable.throw(e))
-				.retryWhen(errs => withDelay(errs))
-				.flatMap($ =>
-					Rx.Observable.range(
-						2,
-						Math.ceil(
-							(parseInt($('#bcs_resultTxt')
-								.find('em')
-								.text()
-							) || 3 - 2) / startPage.searchObject.rowPerPage
-						)
-					)
-						.map(p => new BCItemListURL({ ...startPage.searchObject, p }))
-						.flatMap(url =>
-							url.scrapingObservable()
-								.retryWhen(errs => withDelay(errs))
-						)
-						.startWith($)
-				)
+				.map($ => ({ $, searchObject: startPage.searchObject }))
 		)
-		.map($ => $('.bcs_boxItem .prod_box')
-			.toArray()
-			.map(el => el.attribs['data-item-id']))
+		.retryWhen(err => withDelay(err))
+		.catch(e =>
+			(e['statusCode'] == 404) ? Rx.Observable.empty() : Rx.Observable.throw(e))
+		.concatMap(({ $, searchObject }) =>
+			Rx.Observable.range(
+				2,
+				Math.ceil(
+					(parseInt($('#bcs_resultTxt')
+						.find('em')
+						.text()
+					) || 3 - 2) / searchObject.rowPerPage
+				)
+			)
+				.map(p => new BCItemListURL({ ...searchObject, p }))
+				.concatMap(url =>
+					url.scrapingObservable()
+						.retryWhen(errs => withDelay(errs))
+				)
+				.startWith($)
+		)
+		.flatMap($ => $('.bcs_boxItem .prod_box')
+			.toArray())
+		.map(el => el.attribs['data-item-id'])
+		.toArray()
 
 export const scrapingDetailObservable = (id: string) =>
 	Rx.Observable.of(new BCDetailURL(id))
@@ -241,16 +236,11 @@ export const execScraping = (queries: SearchObject) =>
 		.concatMap(_val =>
 			Rx.Observable.zip(
 				scrapingDetailObservable(_val)
-					.retryWhen(withDelay)
-				,
+					.retryWhen(withDelay),
 				scrapingStockObservable(_val)
 					.retryWhen(withDelay)
-				,
-				(detail, stock) => ([
-					...detail,
-					...stock
-				])
 			)
+				.map(([detail, stock]) => [...detail, ...stock])
 		)
 		.startWith([...dataTitle, ...shopLists])
 			// .map(_val => JSON.stringify(_val, null, 2))

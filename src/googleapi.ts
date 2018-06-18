@@ -1,5 +1,4 @@
 import * as fs from 'fs-extra'
-import * as readline from 'readline'
 import * as path from 'path'
 import * as googlesheets from 'google-sheets-manager'
 import * as utils from 'google-sheets-manager/dist/utils/type_alias'

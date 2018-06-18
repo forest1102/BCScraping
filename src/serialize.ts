@@ -2,9 +2,12 @@ import * as encode from './encoding'
 import * as client from 'cheerio-httpcli'
 import { Observable } from 'rx'
 
-client.set('timeout', 100000)
+client.set('timeout', 3600000)
 process.env.UV_THREADPOOL_SIZE = '128'
 export abstract class ScrapingURL {
+
+	static readonly MAX_WAIT_SEC = 10 * 1000
+	static readonly MIN_WAIT_SEC = 5 * 1000
 
 	abstract get toURL(): string
 
@@ -18,18 +21,11 @@ export abstract class ScrapingURL {
 		return str.join("&")
 	}
 
-
-	scraping() {
-		return client.fetch(this.toURL, 'sjis')
-	}
-
 	scrapingObservable() {
 		return Observable.fromPromise(client.fetch(this.toURL, 'sjis'))
-			.catch(err => {
-				err.message += '\nurl:' + this.toURL
-				return Observable.throw(err)
-			})
 			.map((result) => result.$)
+			.doOnNext(($) => console.log('delay: ' + $.documentInfo().url))
+			.delay(Math.random() * (ScrapingURL.MAX_WAIT_SEC - ScrapingURL.MIN_WAIT_SEC) + ScrapingURL.MIN_WAIT_SEC)
 	}
 }
 

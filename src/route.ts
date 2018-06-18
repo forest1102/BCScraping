@@ -5,9 +5,11 @@ import * as Rx from 'rx'
 import * as fs from 'fs-extra'
 import GoogleAPI from './googleapi'
 import * as moment from 'moment'
+import * as path from 'path'
 
 const BUFFER_SIZE = 10
 const MAX_SHEET_SIZE = 10000
+const CSV_PATH = path.join(__dirname, '../db/db.csv')
 
 export default [
 	{
@@ -23,7 +25,7 @@ export default [
 		handler: (request, h) => {
 			const queries = request.query as SearchObject
 
-			const csv = fs.createWriteStream('./db/data.csv')
+			const csv = fs.createWriteStream(CSV_PATH)
 			execScraping(queries)
 				.map(arr => arr.join(',') + '\n')
 				.subscribe(
@@ -61,11 +63,10 @@ export default [
 				spreadsheetId: sheets.spreadsheetId,
 				includeGridData: false,
 			})
-				.map(res => (res['sheets'] as { properties: { sheetId: number, title: string } }[])
-					.find(e => {
-						return (e.properties && e.properties.title === dayStr)
-					})
-				)
+				.flatMap(res => (res['sheets'] as { properties: { sheetId: number, title: string } }[]))
+				.find(e => {
+					return (e.properties && e.properties.title === dayStr)
+				})
 				.flatMap(sheet =>
 					Rx.Observable.if(
 						() => !!sheet,
