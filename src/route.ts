@@ -94,7 +94,7 @@ export default [
 					)
 				)
 				.doOnNext(id => sheets.sheetId = id)
-				.flatMap(id =>
+				.concatMap(id =>
 					execScraping(queries)
 					// .toArray()
 				)

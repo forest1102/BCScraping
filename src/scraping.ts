@@ -236,13 +236,10 @@ export const execScraping = (queries: SearchObject) =>
 		.flatMap(_val => Rx.Observable.fromArray(_val))
 		.filter(id => !!id)
 		.concatMap(_val =>
-			Rx.Observable.zip(
-				scrapingDetailObservable(_val)
-					.retryWhen(withDelay),
-				scrapingStockObservable(_val)
-					.retryWhen(withDelay)
-			)
-				.map(([detail, stock]) => [...detail, ...stock])
+			scrapingDetailObservable(_val)
+				.concat(scrapingStockObservable(_val))
+				.reduce((acc, cur) => [...acc, ...cur], [])
+
 		)
 		.startWith([...dataTitle, ...shopLists])
 			// .map(_val => JSON.stringify(_val, null, 2))
