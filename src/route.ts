@@ -7,7 +7,7 @@ import GoogleAPI from './googleapi'
 import * as moment from 'moment'
 import * as path from 'path'
 
-const BUFFER_SIZE = 10
+const BUFFER_SIZE = 1
 const MAX_SHEET_SIZE = 10000
 const CSV_PATH = path.join(__dirname, '../db/db.csv')
 
@@ -90,11 +90,6 @@ export default [
 								]
 							}
 						})
-							.do(
-								res => console.log(res),
-								err => console.error(err),
-								null
-							)
 							.map(res => res['replies'][0]['addSheet']['properties']['sheetId'] as number)
 					)
 				)
