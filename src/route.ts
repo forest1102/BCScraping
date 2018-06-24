@@ -7,7 +7,7 @@ import GoogleAPI from './googleapi'
 import * as moment from 'moment'
 import * as path from 'path'
 
-const BUFFER_SIZE = 1
+const BUFFER_SIZE = 10
 const MAX_SHEET_SIZE = 10000
 const CSV_PATH = path.join(__dirname, '../db/db.csv')
 
