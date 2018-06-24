@@ -27,6 +27,7 @@ fs.readFile(SCRAPING_LIST_PATH)
 		const csv = fs.createWriteStream(CSV_PATH)
 		Rx.Observable.from(data)
 			.concatMap(q => execScraping(q))
+			.map(arr => arr.join(',') + '\n')
 			.subscribe(
 				val => {
 					console.log(val)
