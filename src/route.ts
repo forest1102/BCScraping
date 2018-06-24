@@ -98,7 +98,7 @@ export default [
 					execScraping(queries)
 					// .toArray()
 				)
-				.take(MAX_SHEET_SIZE)
+				// .take(MAX_SHEET_SIZE)
 				.bufferWithCount(BUFFER_SIZE)
 				.subscribe(buf => {
 					console.log(JSON.stringify(buf))
