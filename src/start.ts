@@ -100,7 +100,7 @@ if (spreadsheetId) {
 				.doOnNext(id => sheets.sheetId = id)
 				.concatMap(id =>
 					Rx.Observable.from(queries)
-						.flatMap(query =>
+						.concatMap(query =>
 							execScraping(query))
 					// .toArray()
 				)
