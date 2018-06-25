@@ -21,7 +21,7 @@ export abstract class ScrapingURL {
 		return str.join("&")
 	}
 
-	scrapingObservable() {
+	fetchObservable() {
 		return Observable.fromPromise(client.fetch(this.toURL, 'sjis'))
 			.map((result) => result.$)
 			.doOnNext(($) => console.log('delay: ' + $.documentInfo().url))

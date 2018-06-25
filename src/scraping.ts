@@ -107,7 +107,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 		.map((searchObject: SearchObject) =>
 			new BCItemListURL(searchObject))
 		.concatMap(startPage =>
-			startPage.scrapingObservable()
+			startPage.fetchObservable()
 				.map($ => ({ $, searchObject: startPage.searchObject }))
 		)
 		.retryWhen(err => withDelay(err))
@@ -125,7 +125,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 			)
 				.map(p => new BCItemListURL({ ...searchObject, p }))
 				.concatMap(url =>
-					url.scrapingObservable()
+					url.fetchObservable()
 						.retryWhen(errs => withDelay(errs))
 				)
 				.startWith($)
@@ -139,7 +139,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 
 export const scrapingDetailObservable = (id: string) =>
 	Rx.Observable.of(new BCDetailURL(id))
-		.flatMap(url => url.scrapingObservable())
+		.flatMap(url => url.fetchObservable())
 		.map<{ [key: string]: string }>($ => {
 			if (!id) {
 				return {
@@ -209,7 +209,7 @@ export const scrapingDetailObservable = (id: string) =>
 
 export const scrapingStockObservable = (id: string) =>
 	Rx.Observable.of(new BCStockURL(id))
-		.flatMap(url => url.scrapingObservable())
+		.flatMap(url => url.fetchObservable())
 		.flatMap($ => Rx.Observable.range(0, shopLength)
 			.map(i => $(`#shopList_jp_${i}`))
 			.map(cur => $('.bcs_KST_Stock', cur).first().text())

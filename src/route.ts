@@ -100,7 +100,7 @@ export default [
 			const { id } = request.query as { id: string }
 			if (!id) return 'id'
 			Rx.Observable.of(new BCStockURL(id))
-				.flatMap(url => url.scrapingObservable())
+				.flatMap(url => url.fetchObservable())
 				.flatMap($ => {
 					const shopLength = $(' [name=realshop_name_list_jp]').length
 
