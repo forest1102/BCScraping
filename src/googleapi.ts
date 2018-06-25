@@ -39,6 +39,24 @@ class GoogleSheetWithObservable extends googlesheets.GoogleSheet {
 			})
 		})
 	}
+
+	getSheetsList() {
+		return this
+			.getObservable({
+				spreadsheetId: this.spreadsheetId,
+				includeGridData: false,
+			})
+			.flatMap(res =>
+				(res['sheets'] as { properties: { sheetId: number, title: string } }[] || [])
+					.filter(sheet => !!sheet && !!sheet.properties)
+			)
+	}
+
+	getSheetId() {
+		return this.getSheetsList()
+			.first()
+			.map(val => val.properties.sheetId)
+	}
 }
 
 class GoogleAPI {
@@ -49,6 +67,8 @@ class GoogleAPI {
 	private oAuth = new googlesheets.ServiceAccount(cred as utils.IServiceAccountCreds)
 
 	private _spreadsheetId: string
+
+	private _spreadsheetsList: { sheetId: string, title: string }[]
 
 	private constructor() { }
 
@@ -73,6 +93,18 @@ class GoogleAPI {
 		}
 
 		return (this._sheets = new GoogleSheetWithObservable(this.oAuth, this._spreadsheetId))
+	}
+
+	getSheetsList() {
+
+		return this.sheets.getObservable({
+			spreadsheetId: this.sheets.spreadsheetId,
+			includeGridData: false,
+		})
+			.map(res =>
+				(res['sheets'] as { properties: { sheetId: number, title: string } }[])
+					.filter(sheet => !!sheet && !!sheet.properties)
+			)
 	}
 
 }

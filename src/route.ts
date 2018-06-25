@@ -59,40 +59,7 @@ export default [
 			}
 			console.log(JSON.stringify(queries))
 
-			sheets.getObservable({
-				spreadsheetId: sheets.spreadsheetId,
-				includeGridData: false,
-			})
-				.map(res =>
-					(res['sheets'] as { properties: { sheetId: number, title: string } }[])
-						.find(e => {
-							return (e.properties && e.properties.title === dayStr)
-						})
-				)
-				.flatMap(sheet =>
-					Rx.Observable.if(
-						() => !!sheet,
-						Rx.Observable.just((sheet || { properties: { sheetId: 0 } }).properties.sheetId),
-						sheets.batchUpdateObservable({
-							spreadsheetId: sheets.spreadsheetId,
-							resource: {
-								"requests": [
-									{
-										"addSheet": {
-											"properties": {
-												"title": dayStr,
-												"gridProperties": {
-													"rowCount": MAX_SHEET_SIZE,
-												}
-											}
-										}
-									}
-								]
-							}
-						})
-							.map(res => res['replies'][0]['addSheet']['properties']['sheetId'] as number)
-					)
-				)
+			sheets.getSheetId()
 				.doOnNext(id => sheets.sheetId = id)
 				.concatMap(id =>
 					execScraping(queries)
