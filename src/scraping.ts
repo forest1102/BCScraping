@@ -1,16 +1,16 @@
 import * as moment from 'moment'
-import { BCDetailURL, BCItemListURL, BCStockURL } from './serialize'
+import { BCDetailURL, BCItemListURL, BCStockURL, AmazonURL } from './serialize'
 import * as Rx from 'rx'
 import { withDelay } from './customObs'
 
-
 type detailObject = {
 	'商品名': string
-	'価格（税込）': string
-	'ポイント': string
+	'価格（税込）': number
+	'ポイント': number
 	'型番': string
 	'メーカー': string
-	'JANコード': string
+	'JANコード': string,
+	[key: string]: string | number
 }
 
 enum StockType {
@@ -140,16 +140,16 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 export const scrapingDetailObservable = (id: string) =>
 	Rx.Observable.of(new BCDetailURL(id))
 		.flatMap(url => url.fetchObservable())
-		.map<{ [key: string]: string }>($ => {
+		.map($ => {
 			if (!id) {
 				return {
 					'商品名': '',
-					'価格（税込）': '',
-					'ポイント': '',
+					'価格（税込）': 0,
+					'ポイント': 0,
 					'型番': '',
 					'メーカー': '',
 					'JANコード': ''
-				}
+				} as detailObject
 			}
 
 			return ({
@@ -181,31 +181,37 @@ export const scrapingDetailObservable = (id: string) =>
 						}
 					}, {}),
 
-				'価格（税込）': $('.tax_cell li')
-					.last()
-					.text()
-					.replace(/円（税込）/, '')
+				'価格（税込）': parseInt(
+					$('.tax_cell li')
+						.last()
+						.text()
+						.replace(/円（税込）/, '')
+						.replace(',', '')
+				)
 				,
-				'ポイント': $('.bcs_point')
-					.first()
-					.text()
-					.replace('ポイント', '')
-					.replace(/（.*?）/, '')
-					.trim()
+				'ポイント': parseInt(
+					$('.bcs_point')
+						.first()
+						.text()
+						.replace('ポイント', '')
+						.replace(/（.*?）/, '')
+						.replace(',', '')
+						.trim()
+				)
 			} as detailObject)
 		})
 		.catch((err) => {
 			if (err['statusCode'] === 404) return Rx.Observable.return({
 				'商品名': '',
-				'価格（税込）': '',
-				'ポイント': '',
+				'価格（税込）': 0,
+				'ポイント': 0,
 				'型番': '',
 				'メーカー': '',
 				'JANコード': ''
 			})
 			else return Rx.Observable.throw(err)
 		})
-		.map(obj => dataTitle.map(key => `"${obj[key]}"`))
+		.map(obj => dataTitle.map(key => obj[key]))
 
 export const scrapingStockObservable = (id: string) =>
 	Rx.Observable.of(new BCStockURL(id))
@@ -215,21 +221,70 @@ export const scrapingStockObservable = (id: string) =>
 			.map(cur => $('.bcs_KST_Stock', cur).first().text())
 			.map(value => +(value === '◎ 在庫あり' || value === '○ 在庫残少') + '')
 			.toArray()
-			// .reduce((acc, cur) => {
-			// 	const key = $('.pc_dtb', cur).first().text()
-			// 	const value = $('.bcs_KST_Stock', cur).first().text()
-			// 	return {
-			// 		[key]:
-			// 			+(value === '◎ 在庫あり' || value === '○ 在庫残少'),
-			// 		...acc
-			// 	}
-			// }, {})
 		)
 		.catch((err) => {
 			if (err['statusCode'] === 404)
 				return Rx.Observable.return(defaultStock)
 			else return Rx.Observable.throw(err)
 		})
+
+export const getAmazonData = (janCode: string) =>
+	Rx.Observable.just({
+		'Action': 'GetMatchingProductForId',
+		'IdList.Id.1': janCode,
+		'IdType': 'JAN'
+	})
+		.map(params => new AmazonURL(params))
+		.flatMap(url => url.fetchObservable(false))
+		.flatMap($ =>
+			$('Product')
+				.toArray()
+				.map((product, i) => ({
+					i,
+					ASIN: $('ASIN', product).text(),
+					rank: parseInt($('Rank', product).text()) || -1
+				}))
+		)
+		.take(20)
+		.let(obs =>
+			Rx.Observable.zip(
+
+				obs
+					.reduce((acc, { ASIN, i }) => ({
+						...acc,
+						[`ASINList.ASIN.${(i + 1)}`]: ASIN
+					}), {} as { [key: string]: string })
+					.map(asinParam => ({
+						...asinParam,
+						Action: 'GetLowestOfferListingsForASIN'
+					}))
+					.map(param => new AmazonURL(param))
+					.flatMap(url => url.fetchObservable(false))
+					.doOnNext(
+						$ => ($('Error').length > 0) ?
+							console.log($('Error').html()) :
+							null
+					)
+					.flatMap($ =>
+						$('GetLowestOfferListingsForASINResult')
+							.toArray()
+							// .filter(el => !$('Error', el).length)
+							.map(el => ({
+								ASIN: $('ASIN', el).first().text(),
+								price: Number($('LandedPrice', el).children('Amount').first().text())
+							}))
+					),
+				obs.map(({ ASIN, rank }) => ({ ASIN, rank })),
+				(LowestOfferListing, product) => ({
+					...LowestOfferListing,
+					...product
+				})
+			)
+		)
+		.filter(val => val.price > 0)
+		.defaultIfEmpty({ ASIN: '', rank: -1, price: 0 })
+		.min((a, b) => a.price - b.price)
+
 export const execScraping = (queries: SearchObject) =>
 	scrapingItemListObservable(queries)
 		.filter(_val => !!_val.length)
