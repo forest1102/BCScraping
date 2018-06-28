@@ -294,6 +294,10 @@ export const getAmazonData = (janCode: string) =>
 			)
 		)
 		.filter(val => val.price > 0)
+		.catch(err => {
+			console.log(err)
+			return Rx.Observable.empty()
+		})
 		.defaultIfEmpty({ ASIN: '', rank: -1, price: 0 } as AmazonData)
 		.min((a, b) => a.price - b.price)
 		.first()
