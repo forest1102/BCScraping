@@ -257,6 +257,7 @@ export const getAmazonData = (janCode: string) =>
 				}))
 		)
 		.take(20)
+		.share()
 		.let(obs =>
 			Rx.Observable.zip(
 
