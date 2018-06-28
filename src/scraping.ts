@@ -13,6 +13,13 @@ type detailObject = {
 	[key: string]: string | number
 }
 
+type AmazonData = {
+	ASIN: string
+	price: number
+	rank: number
+	[key: string]: string | number
+}
+
 enum StockType {
 	'△ お取り寄せ',
 	'○ 在庫残少',
@@ -33,6 +40,11 @@ const dataTitle = [
 	'型番',
 	'価格（税込）',
 	'ポイント'
+]
+
+const amazonKey = [
+	'price',
+	'rank'
 ]
 
 
@@ -211,7 +223,6 @@ export const scrapingDetailObservable = (id: string) =>
 			})
 			else return Rx.Observable.throw(err)
 		})
-		.map(obj => dataTitle.map(key => obj[key]))
 
 export const scrapingStockObservable = (id: string) =>
 	Rx.Observable.of(new BCStockURL(id))
@@ -278,12 +289,13 @@ export const getAmazonData = (janCode: string) =>
 				(LowestOfferListing, product) => ({
 					...LowestOfferListing,
 					...product
-				})
+				} as AmazonData)
 			)
 		)
 		.filter(val => val.price > 0)
-		.defaultIfEmpty({ ASIN: '', rank: -1, price: 0 })
+		.defaultIfEmpty({ ASIN: '', rank: -1, price: 0 } as AmazonData)
 		.min((a, b) => a.price - b.price)
+		.first()
 
 export const execScraping = (queries: SearchObject) =>
 	scrapingItemListObservable(queries)
@@ -292,8 +304,21 @@ export const execScraping = (queries: SearchObject) =>
 		.filter(id => !!id)
 		.concatMap(_val =>
 			scrapingDetailObservable(_val)
-				.concat(scrapingStockObservable(_val))
-				.reduce((acc, cur) => [...acc, ...cur], [])
+				.let(obs =>
+					Rx.Observable.zip(
+						obs
+							.map(obj => dataTitle.map(key => obj[key])),
+						obs
+							.flatMap(detail =>
+								getAmazonData(detail['JANコード'])
+							)
+							.map(obj => amazonKey.map(key => obj[key])),
+						obs
+							.flatMap(_ => scrapingStockObservable(_val)),
+						(detail, amazon, stock) =>
+							[...detail, ...amazon, ...stock]
+					)
+				)
 
 		)
 		.startWith([...dataTitle, ...shopLists])
