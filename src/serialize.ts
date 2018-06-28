@@ -1,7 +1,7 @@
 import * as encode from './encoding'
 import * as client from 'cheerio-httpcli'
 import { Observable } from 'rx'
-import SECRET from '../config/amazon-secret.json'
+import * as SECRET from '../config/amazon-secret.json'
 
 import { HmacSHA256 } from 'crypto-js'
 import * as Base64 from 'crypto-js/enc-base64'
