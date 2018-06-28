@@ -321,6 +321,7 @@ export const execScraping = (queries: SearchObject) =>
 				)
 
 		)
+		.map(val => val.map(data => String(data)))
 		.startWith([...dataTitle, ...shopLists])
 			// .map(_val => JSON.stringify(_val, null, 2))
 			// .toArray()
