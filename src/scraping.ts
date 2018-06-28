@@ -304,6 +304,7 @@ export const execScraping = (queries: SearchObject) =>
 		.filter(id => !!id)
 		.concatMap(_val =>
 			scrapingDetailObservable(_val)
+				.share()
 				.let(obs =>
 					Rx.Observable.zip(
 						obs
