@@ -121,7 +121,7 @@ export const scrapingDetailObservable = (id: string) =>
 						.text()
 						.replace(/円（税込）/, '')
 						.replace(',', '')
-				)
+				) || 0
 				,
 				'ポイント': parseInt(
 					$('.bcs_point')
@@ -131,7 +131,7 @@ export const scrapingDetailObservable = (id: string) =>
 						.replace(/（.*?）/, '')
 						.replace(',', '')
 						.trim()
-				)
+				) || 0
 			} as detailObject)
 		})
 		.catch((err) => {
@@ -145,6 +145,10 @@ export const scrapingDetailObservable = (id: string) =>
 			})
 			else return Rx.Observable.throw(err)
 		})
+		.map(detail => ({
+			...detail,
+			'実質仕入価格': detail['価格（税込）'] - detail['ポイント']
+		}))
 
 export const scrapingStockObservable = (id: string) =>
 	Rx.Observable.of(new BCStockURL(id))
@@ -153,7 +157,7 @@ export const scrapingStockObservable = (id: string) =>
 			Rx.Observable.range(0, shopLength)
 				.map(i => $(`#shopList_jp_${i}`))
 				.map(cur => $('.bcs_KST_Stock', cur).first().text())
-				.map(value => +(value === '◎ 在庫あり' || value === '○ 在庫残少') + '')
+				.map(value => +(value === '◎ 在庫あり' || value === '○ 在庫残少'))
 				.toArray()
 		)
 		.catch((err) => {
@@ -226,7 +230,7 @@ export const getAmazonData = (janCode: string) =>
 			console.log(err)
 			return Rx.Observable.empty()
 		})
-		.defaultIfEmpty({ ASIN: '', rank: -1, price: 0 } as AmazonData)
+		.defaultIfEmpty({ ASIN: '', rank: -1, price: -1 } as AmazonData)
 		.min((a, b) => a.price - b.price)
 		.first()
 		.map(val => ({
