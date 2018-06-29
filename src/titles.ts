@@ -62,7 +62,7 @@ export const shopLists = [
 	"Air BIC CAMERA 中部国際空港セントレア店(国際線出発ゲート内)※"
 ]
 export const shopLength = shopLists.length
-export const defaultStock = new Array(shopLength).fill('0')
+export const defaultStock: number[] = new Array(shopLength).fill(0)
 
 export const titleKeys = [
 	'商品コード',

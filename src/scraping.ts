@@ -195,9 +195,10 @@ export const getAmazonData = (janCode: string) =>
 
 				obs
 					.reduce((acc, { ASIN, i }) => ({
+						[`ASINList.ASIN.${(i + 1)}`]: ASIN,
 						...acc,
-						[`ASINList.ASIN.${(i + 1)}`]: ASIN
-					}), {} as { [key: string]: string })
+					}), null as { [key: string]: string })
+					.filter(a => !!a)
 					.map(asinParam => ({
 						...asinParam,
 						Action: 'GetLowestOfferListingsForASIN'
@@ -227,7 +228,7 @@ export const getAmazonData = (janCode: string) =>
 		)
 		.filter(val => val.price > 0)
 		.catch(err => {
-			console.log(err)
+			console.log(JSON.stringify(err))
 			return Rx.Observable.empty()
 		})
 		.defaultIfEmpty({ ASIN: '', rank: -1, price: -1 } as AmazonData)
