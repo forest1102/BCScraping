@@ -265,8 +265,11 @@ export const execScraping = (queries: SearchObject) =>
 						})
 					)
 				)
-
 		)
+		.map(val => ({
+			...val,
+			'粗利': ((val.Amazon価格 > 0) ? val.価格差 / val.Amazon価格 : 0) * 100 + '%'
+		}))
 		.map(val => titleKeys.map(key => val[key]))
 		.map(val => val.map(data => String(data)))
 		.startWith(titleKeys)
