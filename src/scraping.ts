@@ -2,7 +2,7 @@ import * as moment from 'moment'
 import { BCDetailURL, BCItemListURL, BCStockURL, AmazonURL } from './serialize'
 import * as Rx from 'rx'
 import { withDelay } from './customObs'
-import { shopLength, dataKeys, defaultStock, dataTitle, amazonKey, shopLists } from './titles'
+import { shopLength, dataKeys, defaultStock, shopLists, titleKeys } from './titles'
 
 type detailObject = {
 	'商品名': string
@@ -149,17 +149,23 @@ export const scrapingDetailObservable = (id: string) =>
 export const scrapingStockObservable = (id: string) =>
 	Rx.Observable.of(new BCStockURL(id))
 		.flatMap(url => url.fetchObservable())
-		.flatMap($ => Rx.Observable.range(0, shopLength)
-			.map(i => $(`#shopList_jp_${i}`))
-			.map(cur => $('.bcs_KST_Stock', cur).first().text())
-			.map(value => +(value === '◎ 在庫あり' || value === '○ 在庫残少') + '')
-			.toArray()
+		.flatMap($ =>
+			Rx.Observable.range(0, shopLength)
+				.map(i => $(`#shopList_jp_${i}`))
+				.map(cur => $('.bcs_KST_Stock', cur).first().text())
+				.map(value => +(value === '◎ 在庫あり' || value === '○ 在庫残少') + '')
+				.toArray()
 		)
 		.catch((err) => {
 			if (err['statusCode'] === 404)
 				return Rx.Observable.return(defaultStock)
 			else return Rx.Observable.throw(err)
 		})
+		.map(arr =>
+			arr.reduce((acc, cur, i) => ({
+				...acc,
+				[shopLists[i]]: cur
+			}), {} as { [key: string]: string }))
 
 export const getAmazonData = (janCode: string) =>
 	Rx.Observable.just({
@@ -223,6 +229,10 @@ export const getAmazonData = (janCode: string) =>
 		.defaultIfEmpty({ ASIN: '', rank: -1, price: 0 } as AmazonData)
 		.min((a, b) => a.price - b.price)
 		.first()
+		.map(val => ({
+			'Amazon価格': val.price,
+			'順位': val.rank
+		}))
 
 export const execScraping = (queries: SearchObject) =>
 	scrapingItemListObservable(queries)
@@ -234,23 +244,23 @@ export const execScraping = (queries: SearchObject) =>
 				.share()
 				.let(obs =>
 					Rx.Observable.zip(
-						obs
-							.map(obj => dataTitle.map(key => obj[key])),
+						obs,
 						obs
 							.flatMap(detail =>
 								getAmazonData(detail['JANコード'])
 							)
-							.map(obj => amazonKey.map(key => obj[key])),
+						,
 						obs
 							.flatMap(_ => scrapingStockObservable(_val)),
 						(detail, amazon, stock) =>
-							[...detail, ...amazon, ...stock]
+							({ ...detail, ...amazon, ...stock })
 					)
 				)
 
 		)
+		.map(val => titleKeys.map(key => val[key]))
 		.map(val => val.map(data => String(data)))
-		.startWith([...dataTitle, ...shopLists])
+		.startWith(titleKeys)
 			// .map(_val => JSON.stringify(_val, null, 2))
 			// .toArray()
 			// .map(arr => `[${arr.join(',\n')}]`)

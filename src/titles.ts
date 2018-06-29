@@ -16,8 +16,8 @@ export const dataTitle = [
 ]
 
 export const amazonKey = [
-	'price',
-	'rank'
+	'Amazon価格',
+	'順位'
 ]
 
 
@@ -78,3 +78,9 @@ export const shopLists = [
 ]
 export const shopLength = shopLists.length
 export const defaultStock = new Array(shopLength).fill('0')
+
+export const titleKeys = [
+	...dataTitle,
+	...amazonKey,
+	...shopLists
+]
