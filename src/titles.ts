@@ -73,6 +73,7 @@ export const titleKeys = [
 	'ポイント',
 	'実質仕入価格',
 	'Amazon価格',
+	'価格差',
 	'順位',
 	...shopLists
 ]

@@ -231,7 +231,7 @@ export const getAmazonData = (janCode: string) =>
 			console.log(JSON.stringify(err))
 			return Rx.Observable.empty()
 		})
-		.defaultIfEmpty({ ASIN: '', rank: -1, price: -1 } as AmazonData)
+		.defaultIfEmpty({ ASIN: '', rank: 0, price: 0 } as AmazonData)
 		.min((a, b) => a.price - b.price)
 		.first()
 		.map(val => ({
@@ -257,8 +257,12 @@ export const execScraping = (queries: SearchObject) =>
 						,
 						obs
 							.flatMap(_ => scrapingStockObservable(_val)),
-						(detail, amazon, stock) =>
-							({ ...detail, ...amazon, ...stock })
+						(detail, amazon, stock) => ({
+							...detail,
+							...amazon,
+							...stock,
+							'価格差': amazon.Amazon価格 - detail.実質仕入価格
+						})
 					)
 				)
 
