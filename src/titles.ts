@@ -76,5 +76,6 @@ export const titleKeys = [
 	'価格差',
 	'粗利',
 	'順位',
+	'在庫',
 	...shopLists
 ]

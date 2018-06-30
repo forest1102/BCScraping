@@ -165,11 +165,13 @@ export const scrapingStockObservable = (id: string) =>
 				return Rx.Observable.return(defaultStock)
 			else return Rx.Observable.throw(err)
 		})
-		.map(arr =>
-			arr.reduce((acc, cur, i) => ({
+		.map(arr => ({
+			...arr.reduce((acc, cur, i) => ({
 				...acc,
 				[shopLists[i]]: cur
-			}), {} as { [key: string]: string }))
+			}), {} as { [key: string]: string }),
+			'在庫': arr.reduce((acc, cur) => acc + cur, 0)
+		}))
 
 export const getAmazonData = (janCode: string) =>
 	Rx.Observable.just({
