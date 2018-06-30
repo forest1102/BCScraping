@@ -47,23 +47,27 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 		.retryWhen(err => withDelay(err))
 		.catch(e =>
 			(e['statusCode'] == 404) ? Rx.Observable.empty() : Rx.Observable.throw(e))
-		.concatMap(({ $, searchObject }) =>
-			Rx.Observable.range(
-				2,
-				Math.ceil(
-					(parseInt($('#bcs_resultTxt')
-						.find('em')
-						.text()
-					) || 3 - 2) / searchObject.rowPerPage
-				)
+		.concatMap(({ $, searchObject }) => {
+			const page = Math.ceil(
+				(parseInt($('#bcs_resultTxt')
+					.find('em')
+					.text()
+				) || 3 - 2) / searchObject.rowPerPage
 			)
-				.map(p => new BCItemListURL({ ...searchObject, p }))
-				.concatMap(url =>
-					url.fetchObservable()
-						.retryWhen(errs => withDelay(errs))
+			return Rx.Observable.if(
+				() => page > 2,
+				Rx.Observable.range(
+					2,
+					page
 				)
+					.map(p => new BCItemListURL({ ...searchObject, p }))
+					.concatMap(url =>
+						url.fetchObservable()
+							.retryWhen(errs => withDelay(errs))
+					)
+			)
 				.startWith($)
-		)
+		})
 		.flatMap($ => $('.bcs_boxItem .prod_box')
 			.toArray()
 			.filter(el => $(el).text().indexOf('完売しました') !== -1)
