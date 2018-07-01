@@ -2,7 +2,7 @@ import * as argv from 'argv'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as Rx from 'rx'
-import { execScraping } from './scraping'
+import { execScarpingByArr } from './scraping'
 import GoogleAPI from './googleapi'
 import * as moment from 'moment'
 const SCRAPING_LIST_PATH = path.join(__dirname, '../config/scrapingList.csv')
@@ -66,9 +66,7 @@ if (spreadsheetId) {
 			sheets.getSheetId()
 				.doOnNext(id => sheets.sheetId = id)
 				.concatMap(id =>
-					Rx.Observable.from(queries)
-						.concatMap(query =>
-							execScraping(query))
+					execScarpingByArr(queries)
 					// .toArray()
 				)
 				.take(MAX_SHEET_SIZE)
@@ -103,7 +101,8 @@ else if (word) {
 	const csv = fs.createWriteStream(CSV_PATH)
 	Rx.Observable.from(word)
 		.map(w => ({ q: w } as SearchObject))
-		.concatMap(q => execScraping(q))
+		.toArray()
+		.concatMap(queries => execScarpingByArr(queries))
 		.map(arr => arr.join(',') + '\n')
 		.do(
 			d => console.log(d),
@@ -128,8 +127,7 @@ else {
 						}), {} as SearchObject)
 				)
 			const csv = fs.createWriteStream(CSV_PATH)
-			Rx.Observable.from(data)
-				.concatMap(q => execScraping(q))
+			execScarpingByArr(data)
 				.map(arr => arr.join(',') + '\n')
 				.subscribe(
 					val => {

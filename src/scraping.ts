@@ -278,11 +278,15 @@ export const execScraping = (queries: SearchObject) =>
 		}))
 		.map(val => titleKeys.map(key => val[key]))
 		.map(val => val.map(data => String(data)))
+// .map(_val => JSON.stringify(_val, null, 2))
+// .toArray()
+// .map(arr => `[${arr.join(',\n')}]`)
+// .doOnNext(() => console.log('data saving...'))
+// .flatMap((_val) =>
+// 	fs.outputFile(jsonDir, _val)
+// )
+
+export const execScarpingByArr = (queryArr: SearchObject[]) =>
+	Rx.Observable.from(queryArr)
+		.concatMap(q => execScraping(q))
 		.startWith(titleKeys)
-			// .map(_val => JSON.stringify(_val, null, 2))
-			// .toArray()
-			// .map(arr => `[${arr.join(',\n')}]`)
-			// .doOnNext(() => console.log('data saving...'))
-			// .flatMap((_val) =>
-			// 	fs.outputFile(jsonDir, _val)
-			// )
