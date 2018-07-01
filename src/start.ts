@@ -49,20 +49,20 @@ if (spreadsheetId) {
 	const sheets = GoogleAPI.instance.sheets
 	const dayStr = moment().format('YYYYMMDD')
 	let cur = 1
-	fs.readFile(SCRAPING_LIST_PATH)
-		.then(buf => {
-			return buf.toString()
-				.split('\n')
-				.slice(1)
-				.map(line =>
-					line.split(',')
-						.reduce((acc, _cur, i) => ({
-							...acc,
-							[toObjectTable[i]]: _cur
-						}), {} as SearchObject)
-				)
-		})
-		.then(queries => {
+	Rx.Observable.fromPromise(fs.readFile(SCRAPING_LIST_PATH))
+		.map(buf => buf.toString())
+		.map(data => data
+			.split('\n')
+			.slice(1)
+			.map(line =>
+				line.split(',')
+					.reduce((acc, _cur, i) => ({
+						...acc,
+						[toObjectTable[i]]: _cur
+					}), {} as SearchObject)
+			)
+		)
+		.flatMap(queries =>
 			sheets.getSheetId()
 				.doOnNext(id => sheets.sheetId = id)
 				.concatMap(id =>
@@ -71,29 +71,28 @@ if (spreadsheetId) {
 				)
 				.take(MAX_SHEET_SIZE)
 				.bufferWithCount(BUFFER_SIZE)
-				.subscribe(buf => {
-					console.log(JSON.stringify(buf))
-					sheets.setData(buf, {
-						range: {
-							startRow: cur,
-							startCol: 1,
-							endRow: cur + buf.length - 1,
-							endCol: buf[0].length
-						}
-					}, (err, data) => {
-						if (err) {
-							console.log(err)
-							return
-						}
-						console.log('Saved to Spreadsheet')
-					})
-					cur += buf.length
-				},
-					err => console.error(err),
-					() => console.log('Completed')
-				)
-
-		})
+		)
+		.subscribe(buf => {
+			console.log(JSON.stringify(buf))
+			sheets.setData(buf, {
+				range: {
+					startRow: cur,
+					startCol: 1,
+					endRow: cur + buf.length - 1,
+					endCol: buf[0].length
+				}
+			}, (err, data) => {
+				if (err) {
+					console.log(err)
+					return
+				}
+				console.log('Saved to Spreadsheet')
+			})
+			cur += buf.length
+		},
+			err => console.error(err),
+			() => console.log('Completed')
+		)
 
 	sheets.spreadsheetId = spreadsheetId
 }
@@ -113,29 +112,31 @@ else if (word) {
 
 }
 else {
-
-	fs.readFile(SCRAPING_LIST_PATH)
-		.then(buf => {
-			const data = buf.toString()
-				.split('\n')
-				.slice(1)
-				.map(line =>
-					line.split(',')
-						.reduce((acc, cur, i) => ({
-							...acc,
-							[toObjectTable[i]]: cur
-						}), {} as SearchObject)
-				)
-			const csv = fs.createWriteStream(CSV_PATH)
-			execScarpingByArr(data)
+	const csv = fs.createWriteStream(CSV_PATH)
+	Rx.Observable.fromPromise(fs.readFile(SCRAPING_LIST_PATH))
+		.map(buf => buf.toString())
+		.map(data => data
+			.split('\n')
+			.slice(1)
+			.map(line =>
+				line.split(',')
+					.reduce((acc, cur, i) => ({
+						...acc,
+						[toObjectTable[i]]: cur
+					}), {} as SearchObject)
+			)
+		)
+		.flatMap(queries => {
+			return execScarpingByArr(queries)
 				.map(arr => arr.join(',') + '\n')
-				.subscribe(
-					val => {
-						console.log(val)
-						csv.write(val)
-					},
-					err => console.error(err),
-					() => console.log('Completed!')
-				)
 		})
+		.subscribe(
+			val => {
+				console.log(val)
+				csv.write(val)
+			},
+			err => console.error(err),
+			() => console.log('Completed!')
+		)
+
 }
