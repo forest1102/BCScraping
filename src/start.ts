@@ -63,6 +63,7 @@ if (spreadsheetId) {
 					}), {} as SearchObject)
 			)
 		)
+		.doOnNext(q => console.log(q))
 		.flatMap(queries =>
 			sheets.getSheetId()
 				.doOnNext(id => sheets.sheetId = id)

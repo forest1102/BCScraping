@@ -21,12 +21,6 @@ type AmazonData = {
 	[key: string]: string | number
 }
 
-enum StockType {
-	'△ お取り寄せ',
-	'○ 在庫残少',
-	'◎ 在庫あり',
-	'在庫無し'
-}
 
 export const scrapingItemListObservable = (queries: SearchObject) =>
 	Rx.Observable.if(
@@ -267,15 +261,12 @@ export const execScraping = (queries: SearchObject) =>
 							...detail,
 							...amazon,
 							...stock,
-							'価格差': amazon.Amazon価格 - detail.実質仕入価格
+							'価格差': amazon.Amazon価格 - detail.実質仕入価格,
+							'粗利': ((amazon.Amazon価格 > 0) ? (amazon.Amazon価格 - detail.実質仕入価格) / amazon.Amazon価格 : 0) * 100 + '%'
 						})
 					)
 				)
 		)
-		.map(val => ({
-			...val,
-			'粗利': ((val.Amazon価格 > 0) ? val.価格差 / val.Amazon価格 : 0) * 100 + '%'
-		}))
 		.map(val => titleKeys.map(key => val[key]))
 		.map(val => val.map(data => String(data)))
 // .map(_val => JSON.stringify(_val, null, 2))
