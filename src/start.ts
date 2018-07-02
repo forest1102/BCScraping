@@ -8,7 +8,7 @@ import * as moment from 'moment'
 const SCRAPING_LIST_PATH = path.join(__dirname, '../config/scrapingList.csv')
 const CSV_PATH = path.join(__dirname, '../db/db.csv')
 
-const BUFFER_SIZE = 5
+const BUFFER_SIZE = 1
 const MAX_SHEET_SIZE = 10000
 const toObjectTable = [
 	'q',
@@ -48,6 +48,7 @@ if (spreadsheetId) {
 
 	const sheets = GoogleAPI.instance.sheets
 	const dayStr = moment().format('YYYYMMDD')
+	sheets.spreadsheetId = spreadsheetId
 	let cur = 1
 	Rx.Observable.fromPromise(fs.readFile(SCRAPING_LIST_PATH))
 		.map(buf => buf.toString())
@@ -65,7 +66,7 @@ if (spreadsheetId) {
 		.flatMap(queries =>
 			sheets.getSheetId()
 				.doOnNext(id => sheets.sheetId = id)
-				.concatMap(id =>
+				.flatMap(id =>
 					execScarpingByArr(queries)
 					// .toArray()
 				)
@@ -94,14 +95,13 @@ if (spreadsheetId) {
 			() => console.log('Completed')
 		)
 
-	sheets.spreadsheetId = spreadsheetId
 }
 else if (word) {
 	const csv = fs.createWriteStream(CSV_PATH)
 	Rx.Observable.from(word)
 		.map(w => ({ q: w } as SearchObject))
 		.toArray()
-		.concatMap(queries => execScarpingByArr(queries))
+		.flatMap(queries => execScarpingByArr(queries))
 		.map(arr => arr.join(',') + '\n')
 		.do(
 			d => console.log(d),
