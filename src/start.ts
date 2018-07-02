@@ -8,7 +8,7 @@ import * as moment from 'moment'
 const SCRAPING_LIST_PATH = path.join(__dirname, '../config/scrapingList.csv')
 const CSV_PATH = path.join(__dirname, '../db/db.csv')
 
-const BUFFER_SIZE = 10
+const BUFFER_SIZE = 5
 const MAX_SHEET_SIZE = 10000
 const toObjectTable = [
 	'q',
