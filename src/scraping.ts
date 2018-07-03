@@ -21,6 +21,7 @@ type AmazonData = {
 	[key: string]: string | number
 }
 
+const MAX_PAGE = 100
 
 export const scrapingItemListObservable = (queries: SearchObject) =>
 	Rx.Observable.if(
@@ -42,11 +43,14 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 		.catch(e =>
 			(e['statusCode'] == 404) ? Rx.Observable.empty() : Rx.Observable.throw(e))
 		.concatMap(({ $, searchObject }) => {
-			const page = Math.ceil(
-				(parseInt($('#bcs_resultTxt')
-					.find('em')
-					.text()
-				) || 3 - 2) / searchObject.rowPerPage
+			const page = Math.max(
+				Math.ceil(
+					(parseInt($('#bcs_resultTxt')
+						.find('em')
+						.text()
+					) || 3 - 2) / searchObject.rowPerPage
+				),
+				MAX_PAGE
 			)
 			return Rx.Observable.if(
 				() => page > 2,
