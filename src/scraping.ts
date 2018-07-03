@@ -41,7 +41,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 		.catch(e =>
 			(e['statusCode'] == 404) ? Rx.Observable.empty() : Rx.Observable.throw(e))
 		.concatMap(({ $, searchObject }) => {
-			const page = Math.max(
+			const page = Math.min(
 				Math.ceil(
 					(parseInt($('#bcs_resultTxt')
 						.find('em')
