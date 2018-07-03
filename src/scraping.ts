@@ -63,7 +63,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 			)
 				.startWith($)
 		})
-		.map($ => $('.bcs_boxItem .prod_box')
+		.flatMap($ => $('.bcs_boxItem .prod_box')
 			.toArray()
 			.filter(el => $(el).text().indexOf('完売しました') !== -1)
 			.map(el => el.attribs['data-item-id'])
@@ -238,7 +238,6 @@ export const getAmazonData = (janCode: string) =>
 export const execScraping = (queries: SearchObject) =>
 	scrapingItemListObservable(queries)
 		.filter(_val => !!_val.length)
-		.flatMap(_val => Rx.Observable.fromArray(_val))
 		.filter(id => !!id)
 		.concatMap(_val =>
 			scrapingDetailObservable(_val)
