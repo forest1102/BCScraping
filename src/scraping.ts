@@ -56,19 +56,21 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 					2,
 					page
 				)
-					.concatMap(p =>
+					.map(p =>
 						fetchBCItemList({ ...searchObject, p })
 							.retryWhen(errs => withDelay(errs))
 					)
 			)
-				.startWith($)
+				.startWith(Rx.Observable.of($))
 		})
-		.flatMap($ => $('.bcs_boxItem .prod_box')
-			.toArray()
-			.filter(el => $(el).text().indexOf('完売しました') !== -1)
-			.map(el => el.attribs['data-item-id'])
+		.map(obs =>
+			obs
+				.flatMap($ => $('.bcs_boxItem .prod_box')
+					.toArray()
+					.filter(el => $(el).text().indexOf('完売しました') !== -1)
+					.map(el => el.attribs['data-item-id'])
+				)
 		)
-		.concatAll()
 
 export const scrapingDetailObservable = (id: string) =>
 	fetchBCDetail(id)
@@ -238,29 +240,32 @@ export const getAmazonData = (janCode: string) =>
 
 export const execScraping = (queries: SearchObject) =>
 	scrapingItemListObservable(queries)
-		.filter(_val => !!_val.length)
-		.filter(id => !!id)
-		.concatMap(_val =>
-			scrapingDetailObservable(_val)
-				.share()
-				.let(obs =>
-					Rx.Observable.zip(
-						obs,
-						obs
-							.flatMap(detail =>
-								getAmazonData(detail['JANコード'])
+		.concatMap(itemObs =>
+			itemObs
+				.filter(_val => !!_val.length)
+				.filter(id => !!id)
+				.concatMap(_val =>
+					scrapingDetailObservable(_val)
+						.share()
+						.let(obs =>
+							Rx.Observable.zip(
+								obs,
+								obs
+									.flatMap(detail =>
+										getAmazonData(detail['JANコード'])
+									)
+								,
+								obs
+									.flatMap(_ => scrapingStockObservable(_val)),
+								(detail, amazon, stock) => ({
+									...detail,
+									...amazon,
+									...stock,
+									'価格差': amazon.Amazon価格 - detail.実質仕入価格,
+									'粗利': ((amazon.Amazon価格 > 0) ? (amazon.Amazon価格 - detail.実質仕入価格) / amazon.Amazon価格 : 0) * 100 + '%'
+								})
 							)
-						,
-						obs
-							.flatMap(_ => scrapingStockObservable(_val)),
-						(detail, amazon, stock) => ({
-							...detail,
-							...amazon,
-							...stock,
-							'価格差': amazon.Amazon価格 - detail.実質仕入価格,
-							'粗利': ((amazon.Amazon価格 > 0) ? (amazon.Amazon価格 - detail.実質仕入価格) / amazon.Amazon価格 : 0) * 100 + '%'
-						})
-					)
+						)
 				)
 		)
 		.map(val => titleKeys.map(key => val[key]))
