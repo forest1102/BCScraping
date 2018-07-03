@@ -68,6 +68,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 			.filter(el => $(el).text().indexOf('完売しました') !== -1)
 			.map(el => el.attribs['data-item-id'])
 		)
+		.concatAll()
 
 export const scrapingDetailObservable = (id: string) =>
 	fetchBCDetail(id)
