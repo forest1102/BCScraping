@@ -1,5 +1,5 @@
 import * as moment from 'moment'
-import { BCDetailURL, BCItemListURL, BCStockURL, AmazonURL } from './serialize'
+import { fetchAmazon, fetchBCStock, fetchBCDetail, fetchBCItemList, fetchObservable } from './serialize'
 import * as Rx from 'rx'
 import { withDelay } from './customObs'
 import { shopLength, dataKeys, defaultStock, shopLists, titleKeys } from './titles'
@@ -33,11 +33,9 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 			p: 1
 		})
 	)
-		.map((searchObject: SearchObject) =>
-			new BCItemListURL(searchObject))
-		.concatMap(startPage =>
-			startPage.fetchObservable()
-				.map($ => ({ $, searchObject: startPage.searchObject }))
+		.concatMap(searchObject =>
+			fetchBCItemList(searchObject)
+				.map($ => ({ $, searchObject: searchObject }))
 		)
 		.retryWhen(err => withDelay(err))
 		.catch(e =>
@@ -58,9 +56,8 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 					2,
 					page
 				)
-					.map(p => new BCItemListURL({ ...searchObject, p }))
-					.concatMap(url =>
-						url.fetchObservable()
+					.concatMap(p =>
+						fetchBCItemList({ ...searchObject, p })
 							.retryWhen(errs => withDelay(errs))
 					)
 			)
@@ -74,8 +71,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 		.toArray()
 
 export const scrapingDetailObservable = (id: string) =>
-	Rx.Observable.of(new BCDetailURL(id))
-		.flatMap(url => url.fetchObservable())
+	fetchBCDetail(id)
 		.map($ => {
 			if (!id) {
 				return {
@@ -153,8 +149,7 @@ export const scrapingDetailObservable = (id: string) =>
 		}))
 
 export const scrapingStockObservable = (id: string) =>
-	Rx.Observable.of(new BCStockURL(id))
-		.flatMap(url => url.fetchObservable())
+	fetchBCStock(id)
 		.flatMap($ =>
 			Rx.Observable.range(0, shopLength)
 				.map(i => $(`#shopList_jp_${i}`))
@@ -181,8 +176,7 @@ export const getAmazonData = (janCode: string) =>
 		'IdList.Id.1': janCode,
 		'IdType': 'JAN'
 	})
-		.map(params => new AmazonURL(params))
-		.flatMap(url => url.fetchObservable(false))
+		.flatMap(queries => fetchAmazon(queries))
 		.flatMap($ =>
 			$('Product')
 				.toArray()
@@ -207,8 +201,7 @@ export const getAmazonData = (janCode: string) =>
 						...asinParam,
 						Action: 'GetLowestOfferListingsForASIN'
 					}))
-					.map(param => new AmazonURL(param))
-					.flatMap(url => url.fetchObservable(false))
+					.flatMap(queries => fetchAmazon(queries))
 					.doOnNext(
 						$ => ($('Error').length > 0) ?
 							console.log($('Error').html()) :
