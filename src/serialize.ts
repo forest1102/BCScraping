@@ -65,7 +65,7 @@ export function fetchAmazon(params: { [key: string]: string }) {
 		'Timestamp': moment().utc().format(),
 		'Version': '2011-10-01',
 	}
-	const encodedParams = serialize(params, 'utf8', true)
+	const encodedParams = serialize(_params, 'utf8', true)
 
 	const sign = 'GET\nmws.amazonservices.jp\n/Products/2011-10-01\n' + encodedParams
 

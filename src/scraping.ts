@@ -48,7 +48,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 						.text()
 					) || 3 - 2) / searchObject.rowPerPage
 				),
-				MAX_PAGE
+				MAX_PAGE - 1
 			)
 			return Rx.Observable.if(
 				() => page > 2,
