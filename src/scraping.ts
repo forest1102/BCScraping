@@ -63,12 +63,11 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 			)
 				.startWith($)
 		})
-		.flatMap($ => $('.bcs_boxItem .prod_box')
+		.map($ => $('.bcs_boxItem .prod_box')
 			.toArray()
 			.filter(el => $(el).text().indexOf('完売しました') !== -1)
+			.map(el => el.attribs['data-item-id'])
 		)
-		.map(el => el.attribs['data-item-id'])
-		.toArray()
 
 export const scrapingDetailObservable = (id: string) =>
 	fetchBCDetail(id)
