@@ -255,8 +255,7 @@ export const execScraping = (queries: SearchObject) =>
 										getAmazonData(detail['JANコード'])
 									)
 								,
-								obs
-									.flatMap(_ => scrapingStockObservable(_val)),
+								scrapingStockObservable(_val),
 								(detail, amazon, stock) => ({
 									...detail,
 									...amazon,
