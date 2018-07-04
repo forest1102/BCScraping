@@ -30,9 +30,11 @@ function serialize(obj: {}, encoding: 'utf8' | 'sjis' = 'sjis', sort = false) {
 }
 
 export function fetchObservable(url: string, isDelayed = true) {
+	console.log(url)
 	const fetch = Observable.fromPromise(client.fetch(url))
-		.map((result) => result.$)
-		.doOnNext(($) => console.log('url: ' + $.documentInfo().url))
+		.map((result) => {
+			return result.$
+		})
 	return (isDelayed) ?
 		fetch
 			.delay(Math.random() * (MAX_WAIT_SEC - MIN_WAIT_SEC) + MIN_WAIT_SEC) :
