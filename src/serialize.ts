@@ -53,7 +53,7 @@ export function fetchBCDetail(id: string | number) {
 
 export const fetchBCStock = (id: string | number) =>
 	fetchObservable(
-		`https://www.biccamera.com/bc/tenpo/csfbctoriokilist.jsp?goods_no=${id}`
+		`https://www.biccamera.com/bc/tenpo/CSfBcToriokiList.jsp?GOODS_NO=${id}`
 	)
 
 export function fetchAmazon(params: { [key: string]: string }) {
