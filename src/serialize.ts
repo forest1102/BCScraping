@@ -30,9 +30,9 @@ function serialize(obj: {}, encoding: 'utf8' | 'sjis' = 'sjis', sort = false) {
 }
 
 export function fetchObservable(url: string, isDelayed = true) {
-	console.log(url)
 	const fetch = Observable.fromPromise(client.fetch(url))
 		.map((result) => {
+			console.log(url)
 			return result.$
 		})
 	return (isDelayed) ?
