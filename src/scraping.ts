@@ -249,6 +249,7 @@ export const execScraping = (queries: SearchObject) =>
 				.filter(id => !!id)
 				.concatMap(_val =>
 					scrapingDetailObservable(_val)
+						.retryWhen(withDelay)
 						.share()
 						.let(obs =>
 							Rx.Observable.zip(
@@ -256,10 +257,14 @@ export const execScraping = (queries: SearchObject) =>
 								obs
 									.flatMap(detail =>
 										getAmazonData(detail['JANコード'])
+											.retryWhen(withDelay)
 									)
 								,
 								obs
-									.flatMap(_ => scrapingStockObservable(_val)),
+									.flatMap(_ =>
+										scrapingStockObservable(_val)
+											.retryWhen(withDelay)
+									),
 								(detail, amazon, stock) => ({
 									...detail,
 									...amazon,
