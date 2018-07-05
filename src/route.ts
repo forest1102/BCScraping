@@ -1,4 +1,5 @@
 import { scrapingStockObservable, execScraping, getAmazonData } from './scraping'
+import { fetchAmazon } from './serialize'
 import * as Hapi from 'hapi'
 import * as Rx from 'rx'
 import * as fs from 'fs-extra'
@@ -89,6 +90,86 @@ export default [
 
 
 			return queries
+		}
+	},
+	{
+		method: 'GET',
+		path: '/JAN/{janCode}',
+		handler: (request, h) => {
+			const {
+				janCode
+			} = request.params
+
+			Rx.Observable.just({
+				'Action': 'GetMatchingProductForId',
+				'IdList.Id.1': janCode,
+				'IdType': 'JAN'
+			})
+				.flatMap(queries => fetchAmazon(queries))
+				.flatMap($ =>
+					$('Product')
+						.toArray()
+						.map((product, i) => ({
+							i,
+							ASIN: $('ASIN', product).first().text(),
+							rank: parseInt($('Rank', product).text()) || 0
+						}))
+				)
+				.take(20)
+				.share()
+				.let(obs =>
+					Rx.Observable.zip(
+
+						obs
+							.reduce((acc, { ASIN, i }) => ({
+								[`ASINList.ASIN.${(i + 1)}`]: ASIN,
+								...acc,
+							}), null as { [key: string]: string })
+							.filter(a => !!a)
+							.map(asinParam => ({
+								...asinParam,
+								Action: 'GetLowestOfferListingsForASIN',
+								ItemCondition: 'New'
+							}))
+							.flatMap(queries => fetchAmazon(queries))
+							.doOnNext(
+								$ => ($('Error').length > 0) ?
+									console.log($('Error').html()) :
+									null
+							)
+							.flatMap($ =>
+								$('GetLowestOfferListingsForASINResult')
+									.toArray()
+									// .filter(el => !$('Error', el).length)
+									.map(el => ({
+										ASIN: $('ASIN', el).first().text(),
+										price: Number($('LandedPrice', el).children('Amount').first().text())
+									}))
+							),
+						obs.map(({ ASIN, rank }) => ({ ASIN, rank })),
+						(LowestOfferListing, product) => ({
+							...LowestOfferListing,
+							...product
+						})
+					)
+				)
+				.filter(val => val.price > 0)
+				.catch(err => {
+					console.log(JSON.stringify(err))
+					return Rx.Observable.empty()
+				})
+				.defaultIfEmpty({ ASIN: '', rank: 0, price: 0 })
+				.first()
+				.map(val => ({
+					'Amazon価格': val.price,
+					'順位': val.rank
+				}))
+				.subscribe(
+					console.log,
+					console.error,
+					() => console.log('Completed')
+				)
+			return { janCode }
 		}
 	}
 

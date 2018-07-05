@@ -187,8 +187,8 @@ export const getAmazonData = (janCode: string) =>
 				.toArray()
 				.map((product, i) => ({
 					i,
-					ASIN: $('ASIN', product).text(),
-					rank: parseInt($('Rank', product).text()) || -1
+					ASIN: $('ASIN', product).first().text(),
+					rank: parseInt($('Rank', product).text()) || 0
 				}))
 		)
 		.take(20)
@@ -204,7 +204,8 @@ export const getAmazonData = (janCode: string) =>
 					.filter(a => !!a)
 					.map(asinParam => ({
 						...asinParam,
-						Action: 'GetLowestOfferListingsForASIN'
+						Action: 'GetLowestOfferListingsForASIN',
+						ItemCondition: 'New'
 					}))
 					.flatMap(queries => fetchAmazon(queries))
 					.doOnNext(

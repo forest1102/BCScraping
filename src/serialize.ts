@@ -74,5 +74,5 @@ export function fetchAmazon(params: { [key: string]: string }) {
 	const Signature = Base64.stringify(HmacSHA256(sign, SECRET.SECRETKEY))
 
 	return fetchObservable(`https://mws.amazonservices.jp/Products/2011-10-01?`
-		+ encodedParams + '&' + serialize({ Signature }, 'utf8'))
+		+ encodedParams + '&' + serialize({ Signature }, 'utf8'), false)
 }
