@@ -10,7 +10,8 @@ type detailObject = {
 	'ポイント': number
 	'型番': string
 	'メーカー': string
-	'JANコード': string,
+	'JANコード': string
+	'商品コード': string
 	[key: string]: string | number
 }
 
@@ -82,8 +83,9 @@ export const scrapingDetailObservable = (id: string) =>
 					'ポイント': 0,
 					'型番': '',
 					'メーカー': '',
-					'JANコード': ''
-				} as detailObject
+					'JANコード': '',
+					'商品コード': id
+				}
 			}
 
 			return ({
@@ -141,7 +143,8 @@ export const scrapingDetailObservable = (id: string) =>
 				'ポイント': 0,
 				'型番': '',
 				'メーカー': '',
-				'JANコード': ''
+				'JANコード': '',
+				'商品コード': id
 			})
 			else return Rx.Observable.throw(err)
 		})
