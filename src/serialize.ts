@@ -10,8 +10,8 @@ import * as moment from 'moment'
 client.set('timeout', 3600000)
 process.env.UV_THREADPOOL_SIZE = '128'
 
-const MAX_WAIT_SEC = 10 * 1000
-const MIN_WAIT_SEC = 5 * 1000
+const MAX_WAIT_SEC = 20 * 1000
+const MIN_WAIT_SEC = 15 * 1000
 
 function serialize(obj: {}, encoding: 'utf8' | 'sjis' = 'sjis', sort = false) {
 	const str = sort ? Object.keys(obj).sort() : Object.keys(obj)
