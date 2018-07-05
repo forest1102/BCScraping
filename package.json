@@ -2,6 +2,7 @@
   "name": "functions",
   "scripts": {
     "lint": "tslint --project tsconfig.json",
+		"compile":"tsc",
     "build": "tsc && node ./lib/index.js",
     "start": "tsc && node ./lib/start.js"
   },

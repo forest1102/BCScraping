@@ -44,17 +44,20 @@ export function fetchObservable(url: string, isDelayed = true) {
 export function fetchBCItemList(searchObject: SearchObject) {
 	const url = `https://www.biccamera.com/bc/category/?${serialize(searchObject)}#bcs_resultTxt`
 	return fetchObservable(url)
+		.retry()
 }
 
 export function fetchBCDetail(id: string | number) {
 	const url = `https://www.biccamera.com/bc/item/${id}`
 	return fetchObservable(url)
+		.retry()
 }
 
 export const fetchBCStock = (id: string | number) =>
 	fetchObservable(
 		`https://www.biccamera.com/bc/tenpo/CSfBcToriokiList.jsp?GOODS_NO=${id}`
 	)
+		.retry()
 
 export function fetchAmazon(params: { [key: string]: string }) {
 	const _params = {
