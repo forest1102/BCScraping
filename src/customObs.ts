@@ -1,5 +1,5 @@
 import { Observable } from 'rx'
-const RETRY_DEFAULT = 100
+const RETRY_DEFAULT = 1
 const SEC_DEFAULT = 10 * 1000
 export const withDelay = (errs: Observable<{}>, MAX = RETRY_DEFAULT, sec = SEC_DEFAULT) =>
 	errs

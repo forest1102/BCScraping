@@ -38,7 +38,6 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 			fetchBCItemList(searchObject)
 				.map($ => ({ $, searchObject: searchObject }))
 		)
-		.retryWhen(err => withDelay(err))
 		.catch(e =>
 			(e['statusCode'] == 404) ? Rx.Observable.empty() : Rx.Observable.throw(e))
 		.concatMap(({ $, searchObject }) => {
@@ -59,7 +58,6 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 				)
 					.map(p =>
 						fetchBCItemList({ ...searchObject, p })
-							.retryWhen(errs => withDelay(errs))
 					)
 			)
 				.startWith(Rx.Observable.of($))
@@ -68,7 +66,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 			obs
 				.flatMap($ => $('.bcs_boxItem .prod_box')
 					.toArray()
-					.filter(el => $(el).text().indexOf('完売しました') !== -1)
+					.filter(el => $(el).text().indexOf('販売を終了しました') !== -1)
 					.map(el => el.attribs['data-item-id'])
 				)
 		)
@@ -250,7 +248,6 @@ export const execScraping = (queries: SearchObject) =>
 				.filter(id => !!id)
 				.concatMap(_val =>
 					scrapingDetailObservable(_val)
-						.retryWhen(withDelay)
 						.share()
 						.let(obs =>
 							Rx.Observable.zip(
@@ -258,13 +255,11 @@ export const execScraping = (queries: SearchObject) =>
 								obs
 									.flatMap(detail =>
 										getAmazonData(detail['JANコード'])
-											.retryWhen(withDelay)
 									)
 								,
 								obs
 									.flatMap(_ =>
 										scrapingStockObservable(_val)
-											.retryWhen(withDelay)
 									),
 								(detail, amazon, stock) => ({
 									...detail,

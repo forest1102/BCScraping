@@ -1,4 +1,5 @@
 import * as encode from './encoding'
+import { withDelay } from './customObs'
 import * as client from 'cheerio-httpcli'
 import { Observable } from 'rx'
 import * as SECRET from '../config/amazon-secret.json'
@@ -35,6 +36,7 @@ export function fetchObservable(url: string, isDelayed = true) {
 			console.log(url)
 			return result.$
 		})
+		.retryWhen(withDelay)
 	return (isDelayed) ?
 		fetch
 			.delay(Math.random() * (MAX_WAIT_SEC - MIN_WAIT_SEC) + MIN_WAIT_SEC) :
@@ -44,20 +46,17 @@ export function fetchObservable(url: string, isDelayed = true) {
 export function fetchBCItemList(searchObject: SearchObject) {
 	const url = `https://www.biccamera.com/bc/category/?${serialize(searchObject)}#bcs_resultTxt`
 	return fetchObservable(url)
-		.retry()
 }
 
 export function fetchBCDetail(id: string | number) {
 	const url = `https://www.biccamera.com/bc/item/${id}`
 	return fetchObservable(url)
-		.retry()
 }
 
 export const fetchBCStock = (id: string | number) =>
 	fetchObservable(
 		`https://www.biccamera.com/bc/tenpo/CSfBcToriokiList.jsp?GOODS_NO=${id}`
 	)
-		.retry()
 
 export function fetchAmazon(params: { [key: string]: string }) {
 	const _params = {
