@@ -15,6 +15,16 @@ type detailObject = {
 	[key: string]: string | number
 }
 
+const defaultDetailAndId = id => ({
+	'商品名': '',
+	'価格（税込）': 0,
+	'ポイント': 0,
+	'型番': '',
+	'メーカー': '',
+	'JANコード': '',
+	'商品コード': id
+})
+
 type AmazonData = {
 	ASIN: string
 	price: number
@@ -75,18 +85,12 @@ export const scrapingDetailObservable = (id: string) =>
 	fetchBCDetail(id)
 		.map($ => {
 			if (!id) {
-				return {
-					'商品名': '',
-					'価格（税込）': 0,
-					'ポイント': 0,
-					'型番': '',
-					'メーカー': '',
-					'JANコード': '',
-					'商品コード': id
-				}
+				return defaultDetailAndId(id)
 			}
 
 			return ({
+				...defaultDetailAndId(id),
+
 				...$('#bcs_detail')
 					.find('tr')
 					.toArray()
@@ -135,15 +139,9 @@ export const scrapingDetailObservable = (id: string) =>
 			} as detailObject)
 		})
 		.catch((err) => {
-			if (err['statusCode'] === 404) return Rx.Observable.return({
-				'商品名': '',
-				'価格（税込）': 0,
-				'ポイント': 0,
-				'型番': '',
-				'メーカー': '',
-				'JANコード': '',
-				'商品コード': id
-			})
+			if (err['statusCode'] === 404) return Rx.Observable.return(
+				defaultDetailAndId(id)
+			)
 			else return Rx.Observable.throw(err)
 		})
 		.map(detail => ({
@@ -174,64 +172,68 @@ export const scrapingStockObservable = (id: string) =>
 		}))
 
 export const getAmazonData = (janCode: string) =>
-	Rx.Observable.just({
-		'Action': 'GetMatchingProductForId',
-		'IdList.Id.1': janCode,
-		'IdType': 'JAN'
-	})
-		.flatMap(queries => fetchAmazon(queries))
-		.flatMap($ =>
-			$('Product')
-				.toArray()
-				.map((product, i) => ({
-					i,
-					ASIN: $('ASIN', product).first().text(),
-					rank: parseInt($('Rank', product).text()) || 0
-				}))
-		)
-		.take(20)
-		.share()
-		.let(obs =>
-			Rx.Observable.zip(
+	Rx.Observable.if(
+		() => !!janCode,
 
-				obs
-					.reduce((acc, { ASIN, i }) => ({
-						[`ASINList.ASIN.${(i + 1)}`]: ASIN,
-						...acc,
-					}), null as { [key: string]: string })
-					.filter(a => !!a)
-					.map(asinParam => ({
-						...asinParam,
-						Action: 'GetLowestOfferListingsForASIN',
-						ItemCondition: 'New'
-					}))
-					.flatMap(queries => fetchAmazon(queries))
-					.doOnNext(
-						$ => ($('Error').length > 0) ?
-							console.log($('Error').html()) :
-							null
-					)
-					.flatMap($ =>
-						$('GetLowestOfferListingsForASINResult')
-							.toArray()
-							// .filter(el => !$('Error', el).length)
-							.map(el => ({
-								ASIN: $('ASIN', el).first().text(),
-								price: Number($('LandedPrice', el).children('Amount').first().text())
-							}))
-					),
-				obs.map(({ ASIN, rank }) => ({ ASIN, rank })),
-				(LowestOfferListing, product) => ({
-					...LowestOfferListing,
-					...product
-				} as AmazonData)
-			)
-		)
-		.filter(val => val.price > 0)
-		.catch(err => {
-			console.log(JSON.stringify(err))
-			return Rx.Observable.empty()
+		Rx.Observable.just({
+			'Action': 'GetMatchingProductForId',
+			'IdList.Id.1': janCode,
+			'IdType': 'JAN'
 		})
+			.flatMap(queries => fetchAmazon(queries))
+			.flatMap($ =>
+				$('Product')
+					.toArray()
+					.map((product, i) => ({
+						i,
+						ASIN: $('ASIN', product).first().text(),
+						rank: parseInt($('Rank', product).text()) || 0
+					}))
+			)
+			.take(20)
+			.share()
+			.let(obs =>
+				Rx.Observable.zip(
+
+					obs
+						.reduce((acc, { ASIN, i }) => ({
+							[`ASINList.ASIN.${(i + 1)}`]: ASIN,
+							...acc,
+						}), null as { [key: string]: string })
+						.filter(a => !!a)
+						.map(asinParam => ({
+							...asinParam,
+							Action: 'GetLowestOfferListingsForASIN',
+							ItemCondition: 'New'
+						}))
+						.flatMap(queries => fetchAmazon(queries))
+						.doOnNext(
+							$ => ($('Error').length > 0) ?
+								console.log($('Error').html()) :
+								null
+						)
+						.flatMap($ =>
+							$('GetLowestOfferListingsForASINResult')
+								.toArray()
+								// .filter(el => !$('Error', el).length)
+								.map(el => ({
+									ASIN: $('ASIN', el).first().text(),
+									price: Number($('LandedPrice', el).children('Amount').first().text())
+								}))
+						),
+					obs.map(({ ASIN, rank }) => ({ ASIN, rank })),
+					(LowestOfferListing, product) => ({
+						...LowestOfferListing,
+						...product
+					} as AmazonData)
+				)
+			)
+			.filter(val => val.price > 0)
+			.catch(err => {
+				console.log(JSON.stringify(err))
+				return Rx.Observable.empty()
+			})
+	)
 		.defaultIfEmpty({ ASIN: '', rank: 0, price: 0 } as AmazonData)
 		.min((a, b) => a.price - b.price)
 		.first()
