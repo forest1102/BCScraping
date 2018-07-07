@@ -67,10 +67,10 @@ export const defaultStock: number[] = new Array(shopLength).fill(0)
 export const titleKeys = [
 	'商品コード',
 	'JANコード',
+	'ASIN',
 	'商品名',
 	'型番',
 	'価格（税込）',
-	'ASIN',
 	'ポイント',
 	'実質仕入価格',
 	'Amazon価格',
