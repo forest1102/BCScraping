@@ -187,7 +187,7 @@ export const getAmazonData = (janCode: string) =>
 					.map((product, i) => ({
 						i,
 						ASIN: $('ASIN', product).first().text(),
-						rank: parseInt($('Rank', product).text()) || 0
+						rank: parseInt($('Rank', product).first().text()) || 0
 					}))
 			)
 			.take(20)
