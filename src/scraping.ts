@@ -239,7 +239,8 @@ export const getAmazonData = (janCode: string) =>
 		.first()
 		.map(val => ({
 			'Amazon価格': val.price,
-			'順位': val.rank
+			'順位': val.rank,
+			'ASIN': val.ASIN
 		}))
 
 export const execScraping = (queries: SearchObject) =>
