@@ -49,7 +49,7 @@ export const scrapingItemListObservable = (queries: SearchObject) =>
 				.map($ => ({ $, searchObject: searchObject }))
 		)
 		.catch(e =>
-			(e['statusCode'] == 404) ? Rx.Observable.empty() : Rx.Observable.throw(e))
+			(e['statusCode'] !== 403) ? Rx.Observable.empty() : Rx.Observable.throw(e))
 		.concatMap(({ $, searchObject }) => {
 			const page = Math.min(
 				Math.ceil(
@@ -139,9 +139,8 @@ export const scrapingDetailObservable = (id: string) =>
 			} as detailObject)
 		})
 		.catch((err) => {
-			if (err['statusCode'] === 404) return Rx.Observable.return(
-				defaultDetailAndId(id)
-			)
+			if (err['statusCode'] !== 403)
+				return Rx.Observable.return(defaultDetailAndId(id))
 			else return Rx.Observable.throw(err)
 		})
 		.map(detail => ({
@@ -159,7 +158,7 @@ export const scrapingStockObservable = (id: string) =>
 				.toArray()
 		)
 		.catch((err) => {
-			if (err['statusCode'] === 404)
+			if (err['statusCode'] !== 403)
 				return Rx.Observable.return(defaultStock)
 			else return Rx.Observable.throw(err)
 		})
