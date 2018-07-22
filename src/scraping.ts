@@ -275,7 +275,8 @@ export const execScraping = (queries: SearchObject) =>
 				)
 		)
 		.map(val => titleKeys.map(key => val[key]))
-		.map(val => val.map(data => String(data)))
+		.map(val => val
+			.map(data => String(data)))
 // .map(_val => JSON.stringify(_val, null, 2))
 // .toArray()
 // .map(arr => `[${arr.join(',\n')}]`)
