@@ -9,7 +9,6 @@ const SCRAPING_LIST_PATH = path.join(__dirname, '../config/scrapingList.csv')
 const CSV_PATH = path.join(__dirname, '../db/db.csv')
 
 const BUFFER_SIZE = 1
-const MAX_SHEET_SIZE = 10000
 const toObjectTable = [
 	'q',
 	'max',
@@ -71,7 +70,6 @@ if (spreadsheetId) {
 					execScarpingByArr(queries)
 					// .toArray()
 				)
-				.take(MAX_SHEET_SIZE)
 				.bufferWithCount(BUFFER_SIZE)
 		)
 		.subscribe(buf => {
