@@ -9,9 +9,10 @@ import * as Base64 from 'crypto-js/enc-base64'
 
 import * as moment from 'moment'
 client.set('timeout', 3600000)
+client.set('referer', false)
 process.env.UV_THREADPOOL_SIZE = '128'
 
-const MAX_WAIT_SEC = 25 * 1000
+const MAX_WAIT_SEC = 30 * 1000
 const MIN_WAIT_SEC = 20 * 1000
 
 function serialize(obj: {}, encoding: 'utf8' | 'sjis' = 'sjis', sort = false) {
@@ -45,18 +46,29 @@ export function fetchObservable(url: string, isDelayed = true) {
 
 export function fetchBCItemList(searchObject: SearchObject) {
 	const url = `https://www.biccamera.com/bc/category/?${serialize(searchObject)}#bcs_resultTxt`
+	client.set('headers', {
+		referer: 'https://www.biccamera.com'
+	})
 	return fetchObservable(url)
 }
 
 export function fetchBCDetail(id: string | number) {
-	const url = `https://www.biccamera.com/bc/item/${id}`
+	const url = `https://www.biccamera.com/bc/item/${id}#bcs_resultTxt`
+	client.set('headers', {
+		referer: 'https://www.biccamera.com/bc/category/?q=hogehoge#bcs_resultTxt'
+	})
 	return fetchObservable(url)
 }
 
-export const fetchBCStock = (id: string | number) =>
-	fetchObservable(
+export const fetchBCStock = (id: string | number) => {
+	client.set('headers', {
+		referer: `https://www.biccamera.com/bc/item/${id}#bcs_resultTxt`
+	})
+
+	return fetchObservable(
 		`https://www.biccamera.com/bc/tenpo/CSfBcToriokiList.jsp?GOODS_NO=${id}`
 	)
+}
 
 export function fetchAmazon(params: { [key: string]: string }) {
 	const _params = {
