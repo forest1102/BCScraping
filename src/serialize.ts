@@ -10,9 +10,10 @@ import * as Base64 from 'crypto-js/enc-base64'
 import * as moment from 'moment'
 client.set('timeout', 3600000)
 process.env.UV_THREADPOOL_SIZE = '128'
+process.env.HTTP_PROXY = 'http://lum-customer-hl_8a91b9b8-zone-zone1-country-jp:viclcysj8p9s@zproxy.lum-superproxy.io:22225'
 
-const MAX_WAIT_SEC = 40 * 1000
-const MIN_WAIT_SEC = 30 * 1000
+const MAX_WAIT_SEC = 15 * 1000
+const MIN_WAIT_SEC = 10 * 1000
 
 function serialize(obj: {}, encoding: 'utf8' | 'sjis' = 'sjis', sort = false) {
 	const str = sort ? Object.keys(obj).sort() : Object.keys(obj)
@@ -31,16 +32,20 @@ function serialize(obj: {}, encoding: 'utf8' | 'sjis' = 'sjis', sort = false) {
 }
 
 export function fetchObservable(url: string, isDelayed = true) {
-	const fetch = Observable.fromPromise(client.fetch(url))
+
+	return Observable.fromPromise(client.fetch(url))
 		.map((result) => {
 			console.log(url)
 			return result.$
 		})
 		.retryWhen(withDelay)
-	return (isDelayed) ?
-		fetch
-			.delay(Math.random() * (MAX_WAIT_SEC - MIN_WAIT_SEC) + MIN_WAIT_SEC) :
-		fetch
+		.let(
+			obs =>
+				(isDelayed) ?
+					obs
+						.delay(Math.random() * (MAX_WAIT_SEC - MIN_WAIT_SEC) + MIN_WAIT_SEC) :
+					obs
+		)
 }
 
 export function fetchBCItemList(searchObject: SearchObject) {
