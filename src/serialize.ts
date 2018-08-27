@@ -12,8 +12,8 @@ client.set('timeout', 3600000)
 process.env.UV_THREADPOOL_SIZE = '128'
 process.env.HTTP_PROXY = 'http://lum-customer-hl_8a91b9b8-zone-zone2-country-jp:7bx2gosdb01o@zproxy.lum-superproxy.io:22225'
 
-const MAX_WAIT_SEC = 20 * 1000
-const MIN_WAIT_SEC = 10 * 1000
+const MAX_WAIT_SEC = 30 * 1000
+const MIN_WAIT_SEC = 20 * 1000
 
 function serialize(obj: {}, encoding: 'utf8' | 'sjis' = 'sjis', sort = false) {
 	const str = sort ? Object.keys(obj).sort() : Object.keys(obj)
