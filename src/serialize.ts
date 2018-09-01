@@ -3,6 +3,7 @@ import { withDelay } from './customObs'
 import * as client from 'cheerio-httpcli'
 import { Observable } from 'rx'
 import * as SECRET from '../config/amazon-secret.json'
+import { proxyRouting, proxyReset } from './lumi-proxy'
 
 import { HmacSHA256 } from 'crypto-js'
 import * as Base64 from 'crypto-js/enc-base64'
@@ -10,7 +11,6 @@ import * as Base64 from 'crypto-js/enc-base64'
 import * as moment from 'moment'
 client.set('timeout', 3600000)
 process.env.UV_THREADPOOL_SIZE = '128'
-process.env.HTTP_PROXY = 'http://lum-customer-hl_8a91b9b8-zone-zone2-country-us:7bx2gosdb01o@zproxy.lum-superproxy.io:22225'
 
 const MAX_WAIT_SEC = 15 * 1000
 const MIN_WAIT_SEC = 10 * 1000
@@ -31,9 +31,14 @@ function serialize(obj: {}, encoding: 'utf8' | 'sjis' = 'sjis', sort = false) {
 	return str.join("&")
 }
 
-export function fetchObservable(url: string, isDelayed = true) {
+export function fetchObservable(url: string, isDelayed = true, routing = true) {
 
-	return Observable.fromPromise(client.fetch(url))
+	return Observable.if(
+		() => routing,
+		proxyRouting(),
+		proxyReset()
+	)
+		.concatMap(() => client.fetch(url))
 		.map((result) => {
 			console.log(url)
 			return result.$
