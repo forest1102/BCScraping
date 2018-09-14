@@ -1,16 +1,30 @@
 import * as encode from './encoding'
 import { withDelay } from './customObs'
-import * as client from 'cheerio-httpcli'
 import { Observable } from 'rx'
 import * as SECRET from '../config/amazon-secret.json'
 import { proxyRouting, proxyReset } from './lumi-proxy'
+import axios, { AxiosInstance } from 'axios'
+import * as iconv from 'iconv-lite'
+import * as cheerio from 'cheerio'
+import * as tunnel from 'tunnel'
 
 import { HmacSHA256 } from 'crypto-js'
 import * as Base64 from 'crypto-js/enc-base64'
 
 import * as moment from 'moment'
-client.set('timeout', 3600000)
 process.env.UV_THREADPOOL_SIZE = '128'
+
+const lumi = tunnel.httpsOverHttp({
+	proxy: {
+		host: 'zproxy.lum-superproxy.io',
+		port: 22225,
+		proxyAuth: 'lum-customer-hl_8a91b9b8-zone-zone2-country-ca:7bx2gosdb01o',
+		headers: {
+			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
+			'Keep-Alive': 'true'
+		}
+	},
+})
 
 const MAX_WAIT_SEC = 15 * 1000
 const MIN_WAIT_SEC = 10 * 1000
@@ -31,18 +45,29 @@ function serialize(obj: {}, encoding: 'utf8' | 'sjis' = 'sjis', sort = false) {
 	return str.join("&")
 }
 
-export function fetchObservable(url: string, isDelayed = true, routing = true) {
+const AWSAxios = axios.create({
+	baseURL: 'https://mws.amazonservices.jp/Products/',
+	proxy: false,
+	responseType: 'text',
+	transformResponse: [
+		(data) => cheerio.load(data)
+	]
+})
 
-	return Observable.if(
-		() => routing,
-		proxyRouting(),
-		proxyReset()
-	)
-		.concatMap(() => client.fetch(url))
-		.map((result) => {
-			console.log(url)
-			return result.$
-		})
+const BCAxios = axios.create({
+	baseURL: 'https://www.biccamera.com/bc/',
+	responseType: 'arraybuffer',
+	httpsAgent: lumi,
+	proxy: false,
+	transformResponse: [
+		(data) => iconv.decode(data, 'Shift_JIS'),
+		(data) => cheerio.load(data)
+	]
+})
+
+export const fetchBase = (axiosIns: AxiosInstance, url: string, isDelayed = true) =>
+	Rx.Observable.fromPromise(axiosIns(url))
+		.map(res => res.data as CheerioStatic)
 		.retryWhen(withDelay)
 		.let(
 			obs =>
@@ -51,33 +76,20 @@ export function fetchObservable(url: string, isDelayed = true, routing = true) {
 						.delay(Math.random() * (MAX_WAIT_SEC - MIN_WAIT_SEC) + MIN_WAIT_SEC) :
 					obs
 		)
-}
+
 
 export function fetchBCItemList(searchObject: SearchObject) {
-	const url = `https://www.biccamera.com/bc/category/?${serialize(searchObject)}#bcs_resultTxt`
-	client.set('headers', {
-		referer: 'https://www.biccamera.com'
-	})
-	return fetchObservable(url)
+	const url = `/category/?${serialize(searchObject)}#bcs_resultTxt`
+	return fetchBase(BCAxios, url)
 }
 
 export function fetchBCDetail(id: string | number) {
-	const url = `https://www.biccamera.com/bc/item/${id}#bcs_resultTxt`
-	client.set('headers', {
-		referer: 'https://www.biccamera.com/bc/category/?q=hogehoge#bcs_resultTxt'
-	})
-	return fetchObservable(url)
+	const url = `/item/${id}#bcs_resultTxt`
+	return fetchBase(BCAxios, url)
 }
 
-export const fetchBCStock = (id: string | number) => {
-	client.set('headers', {
-		referer: `https://www.biccamera.com/bc/item/${id}#bcs_resultTxt`
-	})
-
-	return fetchObservable(
-		`https://www.biccamera.com/bc/tenpo/CSfBcToriokiList.jsp?GOODS_NO=${id}`
-	)
-}
+export const fetchBCStock = (id: string | number) =>
+	fetchBase(BCAxios, `/tenpo/CSfBcToriokiList.jsp?GOODS_NO=${id}`)
 
 export function fetchAmazon(params: { [key: string]: string }) {
 	const _params = {
@@ -96,6 +108,5 @@ export function fetchAmazon(params: { [key: string]: string }) {
 
 	const Signature = Base64.stringify(HmacSHA256(sign, SECRET.SECRETKEY))
 
-	return fetchObservable(`https://mws.amazonservices.jp/Products/2011-10-01?`
-		+ encodedParams + '&' + serialize({ Signature }, 'utf8'), false)
+	return fetchBase(AWSAxios, `2011-10-01?` + encodedParams + '&' + serialize({ Signature }, 'utf8'))
 }
