@@ -33,6 +33,7 @@
     "iconv-lite": "^0.4.24",
     "luminati-proxy": "0.0.8",
     "moment": "^2.22.1",
+    "proxy-agent": "^3.0.3",
     "request": "^2.85.0",
     "rx": "^4.1.0",
     "tunnel": "0.0.6",

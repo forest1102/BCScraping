@@ -1,6 +1,7 @@
 import * as Rx from 'rx'
 import * as Luminati from 'luminati-proxy'
 import * as client from 'cheerio-httpcli'
+import * as ProxyAgent from 'proxy-agent'
 
 const luminati = new Luminati({
 	username: 'hl_8a91b9b8-zone-zone2',
@@ -11,14 +12,4 @@ console.log(process.env.HTTP_PROXY)
 
 export const proxyRouting = () =>
 	Rx.Observable.fromPromise<string>(luminati.getProxy())
-		.doOnNext((proxy: string) => {
-			process.env.HTTP_PROXY = proxy
-		})
-
-export const proxyReset = () =>
-	Rx.Observable.create((obs) => {
-		delete process.env.HTTP_PROXY
-		obs.onNext(null)
-		obs.onCompleted()
-	})
-
+		.map(proxy => new ProxyAgent(proxy))

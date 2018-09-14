@@ -1,20 +1,9 @@
-import route from './route'
-import * as Hapi from 'hapi'
+import { proxyRouting } from './lumi-proxy'
 
-const server: Hapi.Server = new Hapi.Server({
-	host: 'localhost',
-	port: ~~process.env.PORT || 8080
-})
-
-server.route(route)
-
-
-server.start()
-	.then(() => console.log('Server running at:', server.info.uri))
-	.catch((e) => {
-		console.error('server error' + e)
-		process.exit(1)
-	})
+proxyRouting()
+	.subscribe(
+		e => console.log(e)
+	)
 // app
 // 	.get('/setSheetID', (req, res) => {
 // 		const {

@@ -2,7 +2,7 @@ import * as encode from './encoding'
 import { withDelay } from './customObs'
 import { Observable } from 'rx'
 import * as SECRET from '../config/amazon-secret.json'
-import { proxyRouting, proxyReset } from './lumi-proxy'
+import { proxyRouting, } from './lumi-proxy'
 import axios, { AxiosInstance } from 'axios'
 import * as iconv from 'iconv-lite'
 import * as cheerio from 'cheerio'
@@ -14,16 +14,6 @@ import * as Base64 from 'crypto-js/enc-base64'
 import * as moment from 'moment'
 process.env.UV_THREADPOOL_SIZE = '128'
 
-const lumi = tunnel.httpsOverHttp({
-	proxy: {
-		host: 'zproxy.lum-superproxy.io',
-		port: 22225,
-		proxyAuth: 'lum-customer-hl_8a91b9b8-zone-zone2-country-ca:7bx2gosdb01o',
-		headers: {
-			'Keep-Alive': true
-		}
-	},
-})
 
 const MAX_WAIT_SEC = 15 * 1000
 const MIN_WAIT_SEC = 10 * 1000
@@ -56,7 +46,6 @@ const AWSAxios = axios.create({
 const BCAxios = axios.create({
 	baseURL: 'https://www.biccamera.com/bc/',
 	responseType: 'arraybuffer',
-	httpsAgent: lumi,
 	proxy: false,
 	transformResponse: [
 		(data) => iconv.decode(data, 'Shift_JIS'),
@@ -64,8 +53,16 @@ const BCAxios = axios.create({
 	]
 })
 
-export const fetchBase = (axiosIns: AxiosInstance, url: string, isDelayed = true) =>
-	Observable.fromPromise(axiosIns.get(url))
+export const fetchBase = (axiosIns: AxiosInstance, url: string, isDelayed = true, routingProxy = true) =>
+	Observable.if(
+		() => routingProxy,
+
+		proxyRouting()
+			.concatMap(agent => Observable.fromPromise(axiosIns.get(url, {
+				httpsAgent: agent
+			}))),
+		axiosIns(url)
+	)
 		.do(res => console.log(res.config.baseURL + url), err => console.log(err))
 		.map(res => res.data as CheerioStatic)
 		.retryWhen(withDelay)
