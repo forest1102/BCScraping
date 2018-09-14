@@ -20,8 +20,7 @@ const lumi = tunnel.httpsOverHttp({
 		port: 22225,
 		proxyAuth: 'lum-customer-hl_8a91b9b8-zone-zone2-country-ca:7bx2gosdb01o',
 		headers: {
-			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
-			'Keep-Alive': 'true'
+			'Keep-Alive': true
 		}
 	},
 })
@@ -66,7 +65,8 @@ const BCAxios = axios.create({
 })
 
 export const fetchBase = (axiosIns: AxiosInstance, url: string, isDelayed = true) =>
-	Rx.Observable.fromPromise(axiosIns(url))
+	Observable.fromPromise(axiosIns.get(url))
+		.do(res => console.log(res.config.baseURL + url), err => console.log(err))
 		.map(res => res.data as CheerioStatic)
 		.retryWhen(withDelay)
 		.let(

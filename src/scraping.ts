@@ -365,9 +365,8 @@ export const execScraping = (queries: SearchObject) =>
 							Rx.Observable.zip(
 								obs,
 								obs
-									.map(detail =>
-										detail['JANコード'])
-									.let(janObs => JANsToASINs(janObs))
+									.concatMap(detail =>
+										getAmazonData(detail['JANコード']))
 								,
 								obs
 									.flatMap(_ =>
