@@ -3,10 +3,11 @@ import { withDelay } from './customObs'
 import { Observable } from 'rx'
 import * as SECRET from '../config/amazon-secret.json'
 import { proxyRouting, } from './lumi-proxy'
-import axios, { AxiosInstance } from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import * as iconv from 'iconv-lite'
 import * as cheerio from 'cheerio'
 import * as tunnel from 'tunnel'
+import { detect } from './auto-detect'
 
 import { HmacSHA256 } from 'crypto-js'
 import * as Base64 from 'crypto-js/enc-base64'
@@ -39,7 +40,6 @@ const AWSAxios = axios.create({
 	proxy: false,
 	responseType: 'text',
 	transformResponse: [
-		(data) => cheerio.load(data)
 	]
 })
 
@@ -48,24 +48,43 @@ const BCAxios = axios.create({
 	responseType: 'arraybuffer',
 	proxy: false,
 	transformResponse: [
-		(data) => iconv.decode(data, 'Shift_JIS'),
-		(data) => cheerio.load(data)
+		(data) => {
+			const enc = detect(data).toLowerCase()
+			if (/^utf\-?8$/i.test(enc)) {
+				return data.toString()
+			}
+
+			return iconv.decode(data, enc)
+		},
 	]
 })
+
+export const axiosGetObs = (axiosIns: AxiosInstance, url: string, conf?: AxiosRequestConfig) =>
+	Observable.create<CheerioStatic>(o => {
+		axiosIns.get(url, conf)
+			.then(
+				(response) => {
+					console.log(response.config.url)
+					o.onNext(cheerio.load(response.data))
+				},
+				err => {
+					console.log(err)
+					o.onError(err)
+				})
+
+	})
 
 export const fetchBase = (axiosIns: AxiosInstance, url: string, isDelayed = true, routingProxy = true) =>
 	Observable.if(
 		() => routingProxy,
 
 		proxyRouting()
-			.concatMap(agent => Observable.fromPromise(axiosIns.get(url, {
+			.concatMap(agent => axiosGetObs(axiosIns, url, {
 				httpsAgent: agent
-			}))),
-		axiosIns(url)
+			}))
+		,
+		axiosGetObs(axiosIns, url)
 	)
-		.do(res => console.log(res.config.baseURL + url), err => console.log(err))
-		.map(res => res.data as CheerioStatic)
-		.retryWhen(withDelay)
 		.let(
 			obs =>
 				(isDelayed) ?
@@ -105,5 +124,5 @@ export function fetchAmazon(params: { [key: string]: string }) {
 
 	const Signature = Base64.stringify(HmacSHA256(sign, SECRET.SECRETKEY))
 
-	return fetchBase(AWSAxios, `2011-10-01?` + encodedParams + '&' + serialize({ Signature }, 'utf8'))
+	return fetchBase(AWSAxios, `2011-10-01?` + encodedParams + '&' + serialize({ Signature }, 'utf8'), false, false)
 }
