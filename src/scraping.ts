@@ -376,6 +376,7 @@ export const execScraping = (queries: SearchObject) =>
 									...detail,
 									...amazon,
 									...stock,
+									'更新日時': moment().format(),
 									'価格差': amazon.Amazon価格 - detail.実質仕入価格,
 									'粗利': ((amazon.Amazon価格 > 0) ? (amazon.Amazon価格 - detail.実質仕入価格) / amazon.Amazon価格 : 0) * 100 + '%'
 								})

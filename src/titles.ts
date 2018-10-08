@@ -65,6 +65,7 @@ export const shopLength = shopLists.length
 export const defaultStock: number[] = new Array(shopLength).fill(0)
 
 export const titleKeys = [
+	'更新日時',
 	'商品コード',
 	'JANコード',
 	'ASIN',
