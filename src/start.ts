@@ -111,6 +111,7 @@ else if (word) {
 
 }
 else {
+	const start = moment()
 	const csv = fs.createWriteStream(CSV_PATH)
 	Rx.Observable.fromPromise(fs.readFile(SCRAPING_LIST_PATH))
 		.map(buf => buf.toString())
@@ -135,7 +136,10 @@ else {
 				csv.write(val)
 			},
 			err => console.error(err),
-			() => console.log('Completed!')
+			() => {
+				console.log('Completed!')
+				console.log('finished:', moment().diff(start, 'days', true))
+			}
 		)
 
 }
