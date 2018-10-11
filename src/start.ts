@@ -45,6 +45,7 @@ const {
 
 if (spreadsheetId) {
 
+	const start = moment()
 	const sheets = GoogleAPI.instance.sheets
 	const dayStr = moment().format('YYYYMMDD')
 	sheets.spreadsheetId = spreadsheetId
@@ -91,7 +92,10 @@ if (spreadsheetId) {
 			cur += buf.length
 		},
 			err => console.error(err),
-			() => console.log('Completed')
+			() => {
+				console.log('Completed!')
+				console.log('finished:', moment().diff(start, 'days', true))
+			}
 		)
 
 }
